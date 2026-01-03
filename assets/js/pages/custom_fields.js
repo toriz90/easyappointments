@@ -199,10 +199,43 @@ App.Pages.CustomFields = (function () {
         }
 
         App.Http.CustomFields.save(customField).then((response) => {
-            App.Layouts.Backend.displayNotification(lang('custom_field_saved'));
-            resetForm();
-            $('#filter-custom-fields .key').val('');
-            filter('', response.id);
+            // If it's a select field, save the options
+            if (customField.type === 'select') {
+                const promises = [];
+
+                $('.option-row').each(function (index) {
+                    const optionValue = $(this).find('.option-value').val();
+                    const optionLabel = $(this).find('.option-label').val();
+                    const optionId = $(this).find('.option-id').val();
+
+                    if (optionValue && optionLabel) {
+                        const option = {
+                            id_custom_fields: response.id,
+                            option_value: optionValue,
+                            option_label: optionLabel,
+                            sort_order: index,
+                        };
+
+                        if (optionId) {
+                            option.id = optionId;
+                        }
+
+                        promises.push(App.Http.CustomFields.saveOption(option));
+                    }
+                });
+
+                Promise.all(promises).then(() => {
+                    App.Layouts.Backend.displayNotification(lang('custom_field_saved'));
+                    resetForm();
+                    $('#filter-custom-fields .key').val('');
+                    filter('', response.id);
+                });
+            } else {
+                App.Layouts.Backend.displayNotification(lang('custom_field_saved'));
+                resetForm();
+                $('#filter-custom-fields .key').val('');
+                filter('', response.id);
+            }
         });
     }
 
