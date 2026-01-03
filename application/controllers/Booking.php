@@ -261,6 +261,7 @@ class Booking extends EA_Controller
             'display_cookie_notice' => $display_cookie_notice,
             'display_any_provider' => setting('display_any_provider'),
             'future_booking_limit' => setting('future_booking_limit'),
+            'minimum_advance_booking' => setting('minimum_advance_booking', '0'),
             'appointment_data' => $appointment,
             'provider_data' => $provider,
             'customer_data' => $customer,

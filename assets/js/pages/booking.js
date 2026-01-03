@@ -103,9 +103,13 @@ App.Pages.Booking = (function () {
 
         let monthTimeout;
 
+        // Calculate minimum date based on minimum_advance_booking setting
+        const minimumAdvanceBooking = parseInt(vars('minimum_advance_booking')) || 0;
+        const minDate = moment().add(minimumAdvanceBooking, 'days').startOf('day').toDate();
+
         App.Utils.UI.initializeDatePicker($selectDate, {
             inline: true,
-            minDate: moment().subtract(1, 'day').set({hours: 23, minutes: 59, seconds: 59}).toDate(),
+            minDate: minDate,
             maxDate: moment().add(vars('future_booking_limit'), 'days').toDate(),
             onChange: (selectedDates) => {
                 App.Http.Booking.getAvailableHours(moment(selectedDates[0]).format('YYYY-MM-DD'));
@@ -163,7 +167,9 @@ App.Pages.Booking = (function () {
             },
         });
 
-        App.Utils.UI.setDateTimePickerValue($selectDate, new Date());
+        // Set initial date considering minimum advance booking
+        const initialDate = moment().add(minimumAdvanceBooking, 'days').toDate();
+        App.Utils.UI.setDateTimePickerValue($selectDate, initialDate);
 
         const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const isTimezoneSupported = $selectTimezone.find(`option[value="${browserTimezone}"]`).length > 0;
