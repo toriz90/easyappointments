@@ -9,6 +9,8 @@
 $disabled = $disabled ?? false;
 $custom_fields = $custom_fields ?? []; ?>
 
+<!-- DEBUG: Total custom fields: <?= count($custom_fields) ?> -->
+
 <?php foreach ($custom_fields as $custom_field): ?>
     <?php if ($custom_field['active']): ?>
         <div class="mb-3">

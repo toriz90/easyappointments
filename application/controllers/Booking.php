@@ -148,6 +148,10 @@ class Booking extends EA_Controller
         // Load active custom fields
         $custom_fields = $this->custom_fields_model->get(['active' => 1]);
 
+        // DEBUG - Log custom fields
+        log_message('debug', 'Custom fields loaded: ' . count($custom_fields) . ' fields');
+        log_message('debug', 'Custom fields data: ' . json_encode($custom_fields));
+
         // Load options for select-type custom fields
         foreach ($custom_fields as &$custom_field) {
             if ($custom_field['type'] === 'select') {
