@@ -72,6 +72,8 @@ class Booking extends EA_Controller
         $this->load->model('customers_model');
         $this->load->model('settings_model');
         $this->load->model('consents_model');
+        $this->load->model('custom_fields_model');
+        $this->load->model('custom_field_options_model');
 
         $this->load->library('timezones');
         $this->load->library('synchronization');
@@ -141,6 +143,16 @@ class Booking extends EA_Controller
             // Only expose the required provider data.
 
             $this->providers_model->only($available_provider, $this->allowed_provider_fields);
+        }
+
+        // Load active custom fields
+        $custom_fields = $this->custom_fields_model->get(['active' => 1]);
+
+        // Load options for select-type custom fields
+        foreach ($custom_fields as &$custom_field) {
+            if ($custom_field['type'] === 'select') {
+                $custom_field['options'] = $this->custom_field_options_model->get_by_field($custom_field['id']);
+            }
         }
 
         $date_format = setting('date_format');
@@ -241,6 +253,20 @@ class Booking extends EA_Controller
             $customer = $this->customers_model->find($appointment['id_users_customer']);
             $customer_token = md5(uniqid(mt_rand(), true));
 
+            // Load custom field values for this customer
+            $this->load->model('custom_field_values_model');
+            $custom_field_values = $this->custom_field_values_model->get(['id_users' => $customer['id']]);
+            $custom_fields_data = [];
+            foreach ($custom_field_values as $value) {
+                $custom_field = $this->custom_fields_model->find($value['id_custom_fields']);
+                if ($custom_field && $custom_field['active']) {
+                    $custom_fields_data[$custom_field['name']] = $value['value'];
+                }
+            }
+            if (!empty($custom_fields_data)) {
+                $customer['custom_fields_data'] = $custom_fields_data;
+            }
+
             // Cache the token for 10 minutes.
             $this->cache->save('customer-token-' . $customer_token, $customer['id'], 600);
         } else {
@@ -268,6 +294,7 @@ class Booking extends EA_Controller
             'customer_token' => $customer_token,
             'default_language' => setting('default_language'),
             'default_timezone' => setting('default_timezone'),
+            'custom_fields' => $custom_fields,
         ]);
 
         html_vars([
@@ -314,6 +341,7 @@ class Booking extends EA_Controller
             'appointment_data' => $appointment,
             'provider_data' => $provider,
             'customer_data' => $customer,
+            'custom_fields' => $custom_fields,
         ]);
 
         $this->load->view('pages/booking');
@@ -430,10 +458,42 @@ class Booking extends EA_Controller
             // Save customer language (the language which is used to render the booking page).
             $customer['language'] = session('language') ?? config('language');
 
+            // Extract custom fields data before filtering
+            $custom_fields_data = $customer['custom_fields_data'] ?? [];
+
             $this->customers_model->only($customer, $this->allowed_customer_fields);
 
             $customer_id = $this->customers_model->save($customer);
             $customer = $this->customers_model->find($customer_id);
+
+            // Save custom field values
+            if (!empty($custom_fields_data)) {
+                $this->load->model('custom_field_values_model');
+                $custom_fields = $this->custom_fields_model->get(['active' => 1]);
+
+                foreach ($custom_fields as $custom_field) {
+                    $field_name = $custom_field['name'];
+                    if (isset($custom_fields_data[$field_name])) {
+                        // Check if value already exists
+                        $existing_value = $this->custom_field_values_model->get([
+                            'id_custom_fields' => $custom_field['id'],
+                            'id_users' => $customer_id,
+                        ]);
+
+                        $value_data = [
+                            'id_custom_fields' => $custom_field['id'],
+                            'id_users' => $customer_id,
+                            'value' => $custom_fields_data[$field_name],
+                        ];
+
+                        if (!empty($existing_value)) {
+                            $value_data['id'] = $existing_value[0]['id'];
+                        }
+
+                        $this->custom_field_values_model->save($value_data);
+                    }
+                }
+            }
 
             $appointment['id_users_customer'] = $customer_id;
             $appointment['is_unavailability'] = false;

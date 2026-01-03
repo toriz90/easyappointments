@@ -803,6 +803,21 @@ App.Pages.Booking = (function () {
             custom_field_5: $customField5.val(),
         };
 
+        // Collect dynamic custom fields
+        const customFieldsData = {};
+        $('.custom-field-input').each(function () {
+            const $field = $(this);
+            const fieldName = $field.data('field-name');
+            const fieldValue = $field.val();
+            if (fieldName && fieldValue) {
+                customFieldsData[fieldName] = fieldValue;
+            }
+        });
+
+        if (Object.keys(customFieldsData).length > 0) {
+            data.customer.custom_fields_data = customFieldsData;
+        }
+
         data.appointment = {
             start_datetime:
                 moment(App.Utils.UI.getDateTimePickerValue($selectDate)).format('YYYY-MM-DD') +
@@ -907,6 +922,17 @@ App.Pages.Booking = (function () {
             $customField3.val(customer.custom_field_3);
             $customField4.val(customer.custom_field_4);
             $customField5.val(customer.custom_field_5);
+
+            // Populate dynamic custom fields
+            if (customer.custom_fields_data) {
+                $('.custom-field-input').each(function () {
+                    const $field = $(this);
+                    const fieldName = $field.data('field-name');
+                    if (fieldName && customer.custom_fields_data[fieldName]) {
+                        $field.val(customer.custom_fields_data[fieldName]);
+                    }
+                });
+            }
 
             App.Pages.Booking.updateConfirmFrame();
 
