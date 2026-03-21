@@ -145,27 +145,36 @@ class Booking extends EA_Controller
             $this->providers_model->only($available_provider, $this->allowed_provider_fields);
         }
 
-        // Load active custom fields
-        $custom_fields = $this->custom_fields_model->query()
-            ->where('active', 1)
-            ->order_by('sort_order', 'ASC')
-            ->get()
-            ->result_array();
+        // Load active custom fields (with safety check in case migrations haven't run yet)
+        $custom_fields = [];
+        try {
+            if ($this->db->table_exists('custom_fields')) {
+                $custom_fields = $this->custom_fields_model->query()
+                    ->where('active', 1)
+                    ->order_by('sort_order', 'ASC')
+                    ->get()
+                    ->result_array();
 
-        // Cast the fields (convert types)
-        foreach ($custom_fields as &$custom_field) {
-            $custom_field['id'] = (int) $custom_field['id'];
-            $custom_field['active'] = (bool) $custom_field['active'];
-            $custom_field['required'] = (bool) $custom_field['required'];
-            $custom_field['display_column'] = (bool) $custom_field['display_column'];
-            $custom_field['sort_order'] = (int) $custom_field['sort_order'];
-        }
+                // Cast the fields (convert types)
+                foreach ($custom_fields as &$custom_field) {
+                    $custom_field['id'] = (int) $custom_field['id'];
+                    $custom_field['active'] = (bool) $custom_field['active'];
+                    $custom_field['required'] = (bool) $custom_field['required'];
+                    $custom_field['display_column'] = (bool) $custom_field['display_column'];
+                    $custom_field['sort_order'] = (int) $custom_field['sort_order'];
+                }
 
-        // Load options for select-type custom fields
-        foreach ($custom_fields as &$custom_field) {
-            if ($custom_field['type'] === 'select') {
-                $custom_field['options'] = $this->custom_field_options_model->get_by_field($custom_field['id']);
+                // Load options for select-type custom fields
+                foreach ($custom_fields as &$custom_field) {
+                    if ($custom_field['type'] === 'select') {
+                        $custom_field['options'] = $this->custom_field_options_model->get_by_field($custom_field['id']);
+                    }
+                }
+                unset($custom_field);
             }
+        } catch (Exception $e) {
+            log_message('error', 'Error loading custom fields in booking: ' . $e->getMessage());
+            $custom_fields = [];
         }
 
         $date_format = setting('date_format');
@@ -266,18 +275,24 @@ class Booking extends EA_Controller
             $customer = $this->customers_model->find($appointment['id_users_customer']);
             $customer_token = md5(uniqid(mt_rand(), true));
 
-            // Load custom field values for this customer
-            $this->load->model('custom_field_values_model');
-            $custom_field_values = $this->custom_field_values_model->get(['id_users' => $customer['id']]);
-            $custom_fields_data = [];
-            foreach ($custom_field_values as $value) {
-                $custom_field = $this->custom_fields_model->find($value['id_custom_fields']);
-                if ($custom_field && $custom_field['active']) {
-                    $custom_fields_data[$custom_field['name']] = $value['value'];
+            // Load custom field values for this customer (with safety check)
+            try {
+                if ($this->db->table_exists('custom_field_values')) {
+                    $this->load->model('custom_field_values_model');
+                    $custom_field_values = $this->custom_field_values_model->get(['id_users' => $customer['id']]);
+                    $custom_fields_data = [];
+                    foreach ($custom_field_values as $value) {
+                        $custom_field = $this->custom_fields_model->find($value['id_custom_fields']);
+                        if ($custom_field && $custom_field['active']) {
+                            $custom_fields_data[$custom_field['name']] = $value['value'];
+                        }
+                    }
+                    if (!empty($custom_fields_data)) {
+                        $customer['custom_fields_data'] = $custom_fields_data;
+                    }
                 }
-            }
-            if (!empty($custom_fields_data)) {
-                $customer['custom_fields_data'] = $custom_fields_data;
+            } catch (Exception $e) {
+                log_message('error', 'Error loading custom field values in booking: ' . $e->getMessage());
             }
 
             // Cache the token for 10 minutes.

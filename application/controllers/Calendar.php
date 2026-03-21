@@ -608,22 +608,28 @@ class Calendar extends EA_Controller
                 $appointment['service'] = $this->services_model->find($appointment['id_services']);
                 $appointment['customer'] = $this->customers_model->find($appointment['id_users_customer']);
 
-                // Load custom field values for the customer
-                $this->load->model('custom_field_values_model');
-                $this->load->model('custom_fields_model');
-                $custom_field_values = $this->custom_field_values_model->get_by_user($appointment['customer']['id']);
-                $custom_fields = [];
-                foreach ($custom_field_values as $value) {
-                    $custom_field = $this->custom_fields_model->find($value['id_custom_fields']);
-                    if ($custom_field && $custom_field['active']) {
-                        $custom_fields[$custom_field['id']] = [
-                            'label' => $custom_field['label'],
-                            'value' => $value['value']
-                        ];
+                // Load custom field values for the customer (with safety check)
+                try {
+                    if ($this->db->table_exists('custom_field_values')) {
+                        $this->load->model('custom_field_values_model');
+                        $this->load->model('custom_fields_model');
+                        $custom_field_values = $this->custom_field_values_model->get_by_user($appointment['customer']['id']);
+                        $custom_fields = [];
+                        foreach ($custom_field_values as $value) {
+                            $custom_field = $this->custom_fields_model->find($value['id_custom_fields']);
+                            if ($custom_field && $custom_field['active']) {
+                                $custom_fields[$custom_field['id']] = [
+                                    'label' => $custom_field['label'],
+                                    'value' => $value['value']
+                                ];
+                            }
+                        }
+                        if (!empty($custom_fields)) {
+                            $appointment['custom_fields'] = $custom_fields;
+                        }
                     }
-                }
-                if (!empty($custom_fields)) {
-                    $appointment['custom_fields'] = $custom_fields;
+                } catch (Exception $e) {
+                    log_message('error', 'Error loading custom field values in calendar: ' . $e->getMessage());
                 }
             }
 
@@ -762,22 +768,28 @@ class Calendar extends EA_Controller
                 $appointment['service'] = $this->services_model->find($appointment['id_services']);
                 $appointment['customer'] = $this->customers_model->find($appointment['id_users_customer']);
 
-                // Load custom field values for the customer
-                $this->load->model('custom_field_values_model');
-                $this->load->model('custom_fields_model');
-                $custom_field_values = $this->custom_field_values_model->get_by_user($appointment['customer']['id']);
-                $custom_fields = [];
-                foreach ($custom_field_values as $value) {
-                    $custom_field = $this->custom_fields_model->find($value['id_custom_fields']);
-                    if ($custom_field && $custom_field['active']) {
-                        $custom_fields[$custom_field['id']] = [
-                            'label' => $custom_field['label'],
-                            'value' => $value['value']
-                        ];
+                // Load custom field values for the customer (with safety check)
+                try {
+                    if ($this->db->table_exists('custom_field_values')) {
+                        $this->load->model('custom_field_values_model');
+                        $this->load->model('custom_fields_model');
+                        $custom_field_values = $this->custom_field_values_model->get_by_user($appointment['customer']['id']);
+                        $custom_fields = [];
+                        foreach ($custom_field_values as $value) {
+                            $custom_field = $this->custom_fields_model->find($value['id_custom_fields']);
+                            if ($custom_field && $custom_field['active']) {
+                                $custom_fields[$custom_field['id']] = [
+                                    'label' => $custom_field['label'],
+                                    'value' => $value['value']
+                                ];
+                            }
+                        }
+                        if (!empty($custom_fields)) {
+                            $appointment['custom_fields'] = $custom_fields;
+                        }
                     }
-                }
-                if (!empty($custom_fields)) {
-                    $appointment['custom_fields'] = $custom_fields;
+                } catch (Exception $e) {
+                    log_message('error', 'Error loading custom field values in calendar: ' . $e->getMessage());
                 }
             }
 
