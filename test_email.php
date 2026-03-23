@@ -36,7 +36,7 @@ echo '<pre style="font-family:monospace; background:#1e1e1e; color:#d4d4d4; padd
 echo "=== Honey Whale Email Diagnostic ===\n";
 echo "Date: " . date('Y-m-d H:i:s') . "\n";
 echo "SMTP Host: smtp.gmail.com:587 (TLS)\n";
-echo "From: contacto@honeywhale.com.mx\n";
+echo "From: hola@honeywhale.com.mx\n";
 echo "To: $to\n\n";
 echo "--- SMTP Debug Output ---\n";
 
@@ -49,14 +49,14 @@ try {
     $mail->isSMTP();
     $mail->Host       = 'smtp.gmail.com';
     $mail->SMTPAuth   = true;
-    $mail->Username   = 'contacto@honeywhale.com.mx';
-    $mail->Password   = 'vfirtkVMuvfxjnav';
+    $mail->Username   = 'hola@honeywhale.com.mx';
+    $mail->Password   = 'vdmppehfsvmikbqm';
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port       = 587;
     $mail->CharSet    = 'UTF-8';
     $mail->Timeout    = 15;
 
-    $mail->setFrom('contacto@honeywhale.com.mx', 'Honey Whale');
+    $mail->setFrom('hola@honeywhale.com.mx', 'Honey Whale');
     $mail->addAddress($to);
 
     $mail->isHTML(true);
