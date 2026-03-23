@@ -441,12 +441,24 @@ class Booking extends EA_Controller
             if ($this->customers_model->exists($customer)) {
                 $customer['id'] = $this->customers_model->find_record_id($customer);
 
-                $existing_appointments = $this->appointments_model->get([
-                    'id !=' => $manage_mode ? $appointment['id'] : null,
-                    'id_users_customer' => $customer['id'],
-                    'start_datetime <=' => $appointment['start_datetime'],
-                    'end_datetime >=' => $appointment['end_datetime'],
-                ]);
+                // Use proper interval overlap: existing.start < new.end AND existing.end > new.start
+                // This catches exact duplicates, partial overlaps, and back-to-back bookings for the same customer.
+                $end_datetime = $this->appointments_model->calculate_end_datetime($appointment);
+
+                $existing_appointments = $this->appointments_model->query()
+                    ->where('is_unavailability', false)
+                    ->where('id_users_customer', $customer['id'])
+                    ->where('start_datetime <', $end_datetime)
+                    ->where('end_datetime >=', $appointment['start_datetime'])
+                    ->get()
+                    ->result_array();
+
+                // In manage mode, exclude the appointment being edited.
+                if ($manage_mode && !empty($appointment['id'])) {
+                    $existing_appointments = array_filter($existing_appointments, function ($a) use ($appointment) {
+                        return (int) $a['id'] !== (int) $appointment['id'];
+                    });
+                }
 
                 if (count($existing_appointments)) {
                     throw new RuntimeException(lang('customer_is_already_booked'));
