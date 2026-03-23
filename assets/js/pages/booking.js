@@ -876,11 +876,20 @@ App.Pages.Booking = (function () {
 
         // Collect dynamic custom fields
         const customFieldsData = {};
+        const mutuallyExclusiveFields = ['marketplace', 'sucursales', 'distribuidores'];
         $('.custom-field-input').each(function () {
             const $field = $(this);
             const fieldName = $field.data('field-name');
+            if (!fieldName) return;
+            if ($field.prop('disabled')) {
+                // For mutually exclusive fields, mark as N/A so it appears in the email
+                if (mutuallyExclusiveFields.includes(fieldName)) {
+                    customFieldsData[fieldName] = 'N/A';
+                }
+                return;
+            }
             const fieldValue = $field.val();
-            if (fieldName && fieldValue) {
+            if (fieldValue) {
                 customFieldsData[fieldName] = fieldValue;
             }
         });
