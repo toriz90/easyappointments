@@ -216,10 +216,39 @@ App.Http.Booking = (function () {
                     return false;
                 }
 
-                window.location.href = App.Utils.Url.siteUrl('booking_confirmation/of/' + response.appointment_hash);
+                if (response.appointment_hash) {
+                    window.location.href = App.Utils.Url.siteUrl('booking_confirmation/of/' + response.appointment_hash);
+                } else {
+                    // Unexpected response without hash (e.g. success:false from server)
+                    const errorMsg = response.message || 'Error al registrar la cita. Por favor intente de nuevo.';
+                    const $errorDiv = $('#booking-error-message');
+                    if ($errorDiv.length) {
+                        $errorDiv.text(errorMsg).removeClass('d-none');
+                        setTimeout(() => { $errorDiv.addClass('d-none'); }, 8000);
+                    } else {
+                        alert(errorMsg);
+                    }
+                }
             })
-            .fail(() => {
+            .fail((jqXHR) => {
                 $captchaTitle.find('button').trigger('click');
+
+                let errorMessage = 'Ocurrió un error al registrar la cita. Por favor intente de nuevo.';
+
+                if (jqXHR.responseJSON && jqXHR.responseJSON.message) {
+                    errorMessage = jqXHR.responseJSON.message;
+                }
+
+                const $errorDiv = $('#booking-error-message');
+                if ($errorDiv.length) {
+                    $errorDiv.text(errorMessage).removeClass('d-none');
+
+                    setTimeout(() => {
+                        $errorDiv.addClass('d-none');
+                    }, 8000);
+                } else {
+                    alert(errorMessage);
+                }
             })
             .always(() => {
                 $layer.remove();
