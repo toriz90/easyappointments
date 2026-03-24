@@ -175,10 +175,10 @@ class Calendar extends EA_Controller
 
         $appointment_status_options = setting('appointment_status_options');
 
-        // Load active custom fields with their options - temporarily disabled to debug 500 error
+        // Load active custom fields with their options
         $custom_fields = [];
-        // TODO: Re-enable after fixing database issues
-        /*try {
+        try {
+            if ($this->db->table_exists('custom_fields')) {
             $custom_fields = $this->custom_fields_model->query()
                 ->where('active', 1)
                 ->order_by('sort_order', 'ASC')
@@ -201,10 +201,11 @@ class Calendar extends EA_Controller
                 }
                 unset($custom_field); // Break the reference
             }
+            }
         } catch (Exception $e) {
             log_message('error', 'Error loading custom fields in calendar: ' . $e->getMessage());
             $custom_fields = [];
-        }*/
+        }
 
         script_vars([
             'user_id' => $user_id,
@@ -277,11 +278,46 @@ class Calendar extends EA_Controller
                     throw new RuntimeException('You do not have the required permissions for this task.');
                 }
 
+                // Extract custom fields data before filtering
+                $custom_fields_data = $customer['custom_fields_data'] ?? [];
+
                 $this->customers_model->only($customer, $this->allowed_customer_fields);
 
                 $this->customers_model->optional($customer, $this->optional_customer_fields);
 
                 $customer['id'] = $this->customers_model->save($customer);
+
+                // Save custom field values
+                if (!empty($custom_fields_data) && $this->db->table_exists('custom_field_values')) {
+                    $this->load->model('custom_field_values_model');
+                    $active_custom_fields = $this->custom_fields_model->query()
+                        ->where('active', 1)
+                        ->get()
+                        ->result_array();
+
+                    foreach ($active_custom_fields as $custom_field) {
+                        $field_name = $custom_field['name'];
+                        if (isset($custom_fields_data[$field_name])) {
+                            $existing_value = $this->custom_field_values_model->query()
+                                ->where('id_custom_fields', $custom_field['id'])
+                                ->where('id_users', $customer['id'])
+                                ->get()
+                                ->result_array();
+
+                            $value_data = [
+                                'id_custom_fields' => $custom_field['id'],
+                                'id_users' => $customer['id'],
+                                'value' => $custom_fields_data[$field_name],
+                            ];
+
+                            if (!empty($existing_value)) {
+                                $value_data['id'] = $existing_value[0]['id'];
+                            }
+
+                            $this->custom_field_values_model->save($value_data);
+                        }
+                    }
+                }
             }
 
             // Save appointment changes to the database.
