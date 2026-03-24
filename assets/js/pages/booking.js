@@ -628,42 +628,49 @@ App.Pages.Booking = (function () {
         /**
          * Event: Mutual exclusion for Marketplace, Sucursales, Distribuidores fields
          *
-         * When one of these fields is selected, the other two should be disabled
+         * When one of these fields is selected, the other two should be disabled.
+         * Uses case-insensitive comparison to handle varying DB field name casing.
          */
-        $(document).on('change', '.custom-field-input[data-field-name="marketplace"], .custom-field-input[data-field-name="sucursales"], .custom-field-input[data-field-name="distribuidores"]', function() {
+        $(document).on('change', '.custom-field-input', function() {
             const $changedField = $(this);
-            const changedFieldName = $changedField.data('field-name');
+            const changedFieldName = ($changedField.data('field-name') || '').toLowerCase();
+            const exclusiveFieldNames = ['marketplace', 'sucursales', 'distribuidores'];
+
+            if (!exclusiveFieldNames.includes(changedFieldName)) return;
+
             const hasValue = $changedField.val() && $changedField.val() !== '';
 
-            // Define the three mutually exclusive fields
-            const exclusiveFields = ['marketplace', 'sucursales', 'distribuidores'];
+            // Helper: find a custom field input by case-insensitive name
+            const $getExclusiveField = (name) => $('.custom-field-input').filter(function() {
+                return ($(this).data('field-name') || '').toLowerCase() === name;
+            });
 
             if (hasValue) {
                 // Disable and clear the other two fields
-                exclusiveFields.forEach(fieldName => {
+                exclusiveFieldNames.forEach(fieldName => {
                     if (fieldName !== changedFieldName) {
-                        const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
+                        const $field = $getExclusiveField(fieldName);
                         $field.prop('disabled', true);
                         $field.val('');
-                        // Remove visual required indicator while disabled
                         $field.removeClass('is-invalid');
                     }
                 });
             } else {
-                // Check if any of the three fields has a value
+                // Check if any other exclusive field has a value
                 let anyFieldHasValue = false;
-                exclusiveFields.forEach(fieldName => {
-                    const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
-                    if ($field.val() && $field.val() !== '' && fieldName !== changedFieldName) {
-                        anyFieldHasValue = true;
+                exclusiveFieldNames.forEach(fieldName => {
+                    if (fieldName !== changedFieldName) {
+                        const $field = $getExclusiveField(fieldName);
+                        if ($field.val() && $field.val() !== '') {
+                            anyFieldHasValue = true;
+                        }
                     }
                 });
 
                 // If no field has value, enable all three fields
                 if (!anyFieldHasValue) {
-                    exclusiveFields.forEach(fieldName => {
-                        const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
-                        $field.prop('disabled', false);
+                    exclusiveFieldNames.forEach(fieldName => {
+                        $getExclusiveField(fieldName).prop('disabled', false);
                     });
                 }
             }
@@ -673,14 +680,21 @@ App.Pages.Booking = (function () {
     /**
      * Apply mutual exclusion logic for Marketplace, Sucursales, Distribuidores on page load.
      * Handles browser autocomplete and manage mode pre-filled values.
+     * Uses case-insensitive field name matching.
      */
     function applyMutualExclusionOnLoad() {
-        const exclusiveFields = ['marketplace', 'sucursales', 'distribuidores'];
+        const exclusiveFieldNames = ['marketplace', 'sucursales', 'distribuidores'];
+
+        // Helper: find a custom field input by case-insensitive name
+        const $getExclusiveField = (name) => $('.custom-field-input').filter(function() {
+            return ($(this).data('field-name') || '').toLowerCase() === name;
+        });
+
         let filledFieldName = null;
 
-        // Find which field (if any) has a real value
-        exclusiveFields.forEach(fieldName => {
-            const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
+        // Find which field (if any) has a real value (last one wins if multiple)
+        exclusiveFieldNames.forEach(fieldName => {
+            const $field = $getExclusiveField(fieldName);
             if ($field.length && $field.val() && $field.val() !== '' && $field.val() !== 'N/A') {
                 filledFieldName = fieldName;
             }
@@ -688,17 +702,17 @@ App.Pages.Booking = (function () {
 
         if (filledFieldName) {
             // Disable the other two fields
-            exclusiveFields.forEach(fieldName => {
+            exclusiveFieldNames.forEach(fieldName => {
                 if (fieldName !== filledFieldName) {
-                    const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
+                    const $field = $getExclusiveField(fieldName);
                     $field.prop('disabled', true);
                     $field.val('');
                 }
             });
         } else {
             // No field has a value - ensure all are enabled and clear any 'N/A' values
-            exclusiveFields.forEach(fieldName => {
-                const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
+            exclusiveFieldNames.forEach(fieldName => {
+                const $field = $getExclusiveField(fieldName);
                 $field.prop('disabled', false);
                 if ($field.val() === 'N/A') {
                     $field.val('');
@@ -917,20 +931,25 @@ App.Pages.Booking = (function () {
 
         // Collect dynamic custom fields
         const customFieldsData = {};
-        const mutuallyExclusiveFields = ['marketplace', 'sucursales', 'distribuidores'];
+        const mutuallyExclusiveFieldNames = ['marketplace', 'sucursales', 'distribuidores'];
         $('.custom-field-input').each(function () {
             const $field = $(this);
             const fieldName = $field.data('field-name');
             if (!fieldName) return;
+            const isMutuallyExclusive = mutuallyExclusiveFieldNames.includes(fieldName.toLowerCase());
             if ($field.prop('disabled')) {
                 // For mutually exclusive fields, mark as N/A so it appears in the email
-                if (mutuallyExclusiveFields.includes(fieldName)) {
+                if (isMutuallyExclusive) {
                     customFieldsData[fieldName] = 'N/A';
                 }
                 return;
             }
             const fieldValue = $field.val();
-            if (fieldValue) {
+            if (isMutuallyExclusive) {
+                // Always send a value for mutually exclusive fields so the server
+                // overwrites any stale values from previous bookings in the DB.
+                customFieldsData[fieldName] = fieldValue || 'N/A';
+            } else if (fieldValue) {
                 customFieldsData[fieldName] = fieldValue;
             }
         });
