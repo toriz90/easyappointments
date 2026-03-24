@@ -44,6 +44,7 @@ $custom_fields = $custom_fields ?? []; ?>
                     data-field-name="<?= e($custom_field['name']) ?>"
                     data-field-label="<?= e($custom_field['label']) ?>"
                     class="custom-field-input <?= $custom_field['required'] ? 'required' : '' ?> form-control"
+                    autocomplete="off"
                     <?= $disabled ? 'disabled' : '' ?>>
                     <option value=""><?= lang('select') ?></option>
                     <?php foreach ($custom_field['options'] as $option): ?>

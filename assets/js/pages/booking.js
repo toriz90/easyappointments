@@ -182,6 +182,9 @@ App.Pages.Booking = (function () {
 
         optimizeContactInfoDisplay();
 
+        // Apply mutual exclusion on page load (in case browser autocomplete or manage mode set values)
+        setTimeout(applyMutualExclusionOnLoad, 200);
+
         const serviceOptionCount = $selectService.find('option').length;
 
         if (serviceOptionCount === 2) {
@@ -668,6 +671,43 @@ App.Pages.Booking = (function () {
     }
 
     /**
+     * Apply mutual exclusion logic for Marketplace, Sucursales, Distribuidores on page load.
+     * Handles browser autocomplete and manage mode pre-filled values.
+     */
+    function applyMutualExclusionOnLoad() {
+        const exclusiveFields = ['marketplace', 'sucursales', 'distribuidores'];
+        let filledFieldName = null;
+
+        // Find which field (if any) has a real value
+        exclusiveFields.forEach(fieldName => {
+            const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
+            if ($field.length && $field.val() && $field.val() !== '' && $field.val() !== 'N/A') {
+                filledFieldName = fieldName;
+            }
+        });
+
+        if (filledFieldName) {
+            // Disable the other two fields
+            exclusiveFields.forEach(fieldName => {
+                if (fieldName !== filledFieldName) {
+                    const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
+                    $field.prop('disabled', true);
+                    $field.val('');
+                }
+            });
+        } else {
+            // No field has a value - ensure all are enabled and clear any 'N/A' values
+            exclusiveFields.forEach(fieldName => {
+                const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
+                $field.prop('disabled', false);
+                if ($field.val() === 'N/A') {
+                    $field.val('');
+                }
+            });
+        }
+    }
+
+    /**
      * This function validates the customer's data input. The user cannot continue without passing all the validation
      * checks.
      *
@@ -808,10 +848,11 @@ App.Pages.Booking = (function () {
             addressParts.push(zipCode);
         }
 
-        // Collect dynamic custom fields for display
+        // Collect dynamic custom fields for display (skip disabled fields)
         const customFieldsDisplay = [];
         $('.custom-field-input').each(function () {
             const $field = $(this);
+            if ($field.prop('disabled')) return; // skip mutually-exclusive fields that are disabled
             const fieldLabel = $field.data('field-label');
             const fieldValue = $field.val();
             if (fieldLabel && fieldValue) {
@@ -1013,6 +1054,9 @@ App.Pages.Booking = (function () {
                     }
                 });
             }
+
+            // Apply mutual exclusion after setting values (in case manage mode pre-fills fields)
+            applyMutualExclusionOnLoad();
 
             App.Pages.Booking.updateConfirmFrame();
 
