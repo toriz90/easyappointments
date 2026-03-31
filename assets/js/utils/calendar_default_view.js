@@ -169,6 +169,21 @@ App.Utils.CalendarDefaultView = (function () {
                 $appointmentsModal.find('#custom-field-4').val(customer.custom_field_4);
                 $appointmentsModal.find('#custom-field-5').val(customer.custom_field_5);
 
+                // Populate dynamic custom fields (Marketplace, Sucursales, Distribuidores, etc.)
+                if (appointment.custom_fields) {
+                    const customFields =
+                        typeof appointment.custom_fields === 'string'
+                            ? JSON.parse(appointment.custom_fields)
+                            : appointment.custom_fields;
+                    Object.entries(customFields).forEach(([fieldId, fieldData]) => {
+                        const $field = $appointmentsModal.find('#custom-field-' + fieldId);
+                        if ($field.length && fieldData.value && fieldData.value !== 'N/A') {
+                            $field.val(fieldData.value);
+                        }
+                    });
+                    App.Components.AppointmentsModal.applyMutualExclusionOnLoad();
+                }
+
                 App.Components.ColorSelection.setColor(
                     $appointmentsModal.find('#appointment-color'),
                     appointment.color,

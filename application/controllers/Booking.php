@@ -534,6 +534,17 @@ class Booking extends EA_Controller
                     ->get()
                     ->result_array();
 
+                // Ensure all non-winning exclusive fields are set to N/A in $custom_fields_data,
+                // even if they were not submitted by the frontend (e.g., field not in DOM).
+                if ($exclusive_filled !== null) {
+                    foreach ($custom_fields as $cf) {
+                        $cf_lower = strtolower($cf['name']);
+                        if (in_array($cf_lower, $exclusive_names) && $cf_lower !== $exclusive_filled) {
+                            $custom_fields_data[$cf['name']] = 'N/A';
+                        }
+                    }
+                }
+
                 foreach ($custom_fields as $custom_field) {
                     $field_name = $custom_field['name'];
                     if (isset($custom_fields_data[$field_name])) {
