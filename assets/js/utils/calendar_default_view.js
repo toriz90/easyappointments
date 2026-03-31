@@ -611,7 +611,7 @@ App.Utils.CalendarDefaultView = (function () {
 
                     // Iterate through custom fields and add to display
                     for (const [fieldId, fieldValue] of Object.entries(customFields)) {
-                        if (fieldValue && fieldValue.value) {
+                        if (fieldValue && fieldValue.value && fieldValue.value !== 'N/A') {
                             customFieldsElements.push(
                                 $('<strong/>', {
                                     'class': 'd-inline-block me-2',

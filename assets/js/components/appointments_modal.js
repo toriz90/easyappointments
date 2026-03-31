@@ -72,7 +72,84 @@ App.Components.AppointmentsModal = (function () {
     /**
      * Add the component event listeners.
      */
+    /**
+     * Apply mutual exclusion for Marketplace, Sucursales, Distribuidores fields on modal load.
+     */
+    function applyMutualExclusionOnLoad() {
+        const exclusiveFieldNames = ['marketplace', 'sucursales', 'distribuidores'];
+
+        const $getExclusiveField = (name) => $('.custom-field-input').filter(function () {
+            return ($(this).data('field-name') || '').toLowerCase() === name;
+        });
+
+        let filledFieldName = null;
+
+        exclusiveFieldNames.forEach((fieldName) => {
+            const $field = $getExclusiveField(fieldName);
+            if ($field.length && $field.val() && $field.val() !== '' && $field.val() !== 'N/A') {
+                filledFieldName = fieldName;
+            }
+        });
+
+        if (filledFieldName) {
+            exclusiveFieldNames.forEach((fieldName) => {
+                if (fieldName !== filledFieldName) {
+                    const $field = $getExclusiveField(fieldName);
+                    $field.prop('disabled', true).val('');
+                }
+            });
+        } else {
+            exclusiveFieldNames.forEach((fieldName) => {
+                const $field = $getExclusiveField(fieldName);
+                $field.prop('disabled', false);
+                if ($field.val() === 'N/A') {
+                    $field.val('');
+                }
+            });
+        }
+    }
+
     function addEventListeners() {
+        /**
+         * Event: Mutual exclusion for Marketplace, Sucursales, Distribuidores
+         */
+        $(document).on('change', '#appointments-modal .custom-field-input', function () {
+            const $changedField = $(this);
+            const changedFieldName = ($changedField.data('field-name') || '').toLowerCase();
+            const exclusiveFieldNames = ['marketplace', 'sucursales', 'distribuidores'];
+
+            if (!exclusiveFieldNames.includes(changedFieldName)) return;
+
+            const $getExclusiveField = (name) => $('.custom-field-input').filter(function () {
+                return ($(this).data('field-name') || '').toLowerCase() === name;
+            });
+
+            const hasValue = $changedField.val() && $changedField.val() !== '';
+
+            if (hasValue) {
+                exclusiveFieldNames.forEach((fieldName) => {
+                    if (fieldName !== changedFieldName) {
+                        $getExclusiveField(fieldName).prop('disabled', true).val('').removeClass('is-invalid');
+                    }
+                });
+            } else {
+                let anyFieldHasValue = false;
+                exclusiveFieldNames.forEach((fieldName) => {
+                    if (fieldName !== changedFieldName) {
+                        const $field = $getExclusiveField(fieldName);
+                        if ($field.val() && $field.val() !== '') {
+                            anyFieldHasValue = true;
+                        }
+                    }
+                });
+                if (!anyFieldHasValue) {
+                    exclusiveFieldNames.forEach((fieldName) => {
+                        $getExclusiveField(fieldName).prop('disabled', false);
+                    });
+                }
+            }
+        });
+
         /**
          * Event: Manage Appointments Dialog Save Button "Click"
          *
@@ -128,13 +205,24 @@ App.Components.AppointmentsModal = (function () {
                 custom_field_5: $customField5.val(),
             };
 
-            // Collect dynamic custom field values
+            // Collect dynamic custom field values (with mutual exclusion for marketplace/sucursales/distribuidores)
             const custom_fields_data = {};
+            const mutuallyExclusiveFieldNames = ['marketplace', 'sucursales', 'distribuidores'];
             $('.custom-field-input').each(function () {
                 const $field = $(this);
                 const fieldName = $field.data('field-name');
+                if (!fieldName) return;
+                const isMutuallyExclusive = mutuallyExclusiveFieldNames.includes(fieldName.toLowerCase());
                 const fieldValue = $field.val();
-                if (fieldName && fieldValue) {
+                if ($field.prop('disabled')) {
+                    if (isMutuallyExclusive) {
+                        custom_fields_data[fieldName] = 'N/A';
+                    }
+                    return;
+                }
+                if (isMutuallyExclusive) {
+                    custom_fields_data[fieldName] = fieldValue || 'N/A';
+                } else if (fieldValue) {
                     custom_fields_data[fieldName] = fieldValue;
                 }
             });
@@ -291,9 +379,13 @@ App.Components.AppointmentsModal = (function () {
                         const $field = $(this);
                         const fieldName = $field.data('field-name');
                         if (fieldName && customer.custom_fields_data[fieldName]) {
-                            $field.val(customer.custom_fields_data[fieldName]);
+                            const val = customer.custom_fields_data[fieldName];
+                            if (val && val !== 'N/A') {
+                                $field.val(val);
+                            }
                         }
                     });
+                    applyMutualExclusionOnLoad();
                 }
             }
 

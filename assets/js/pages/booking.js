@@ -171,13 +171,19 @@ App.Pages.Booking = (function () {
         const initialDate = moment().add(minimumAdvanceBooking, 'days').toDate();
         App.Utils.UI.setDateTimePickerValue($selectDate, initialDate);
 
-        // Timezone is pre-selected in the HTML with 'selected' attribute and locked with 'disabled'
-        // No need to override it here
+        if (!$selectTimezone.prop('disabled')) {
+            const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const isTimezoneSupported = $selectTimezone.find(`option[value="${browserTimezone}"]`).length > 0;
+            $selectTimezone.val(isTimezoneSupported ? browserTimezone : 'UTC');
+        }
 
         // Bind the event handlers (might not be necessary every time we use this class).
         addEventListeners();
 
         optimizeContactInfoDisplay();
+
+        // Apply mutual exclusion on page load (in case browser autocomplete or manage mode set values)
+        setTimeout(applyMutualExclusionOnLoad, 200);
 
         const serviceOptionCount = $selectService.find('option').length;
 
@@ -327,7 +333,7 @@ App.Pages.Booking = (function () {
         /**
          * Event: Timezone "Changed"
          */
-        $selectTimezone.off('change').on('change', () => {
+        $selectTimezone.on('change', () => {
             const date = App.Utils.UI.getDateTimePickerValue($selectDate);
 
             if (!date) {
@@ -344,7 +350,7 @@ App.Pages.Booking = (function () {
          *
          * Whenever the provider changes the available appointment date - time periods must be updated.
          */
-        $selectProvider.off('change').on('change', (event) => {
+        $selectProvider.on('change', (event) => {
             const $target = $(event.target);
 
             const todayDateTimeObject = new Date();
@@ -367,7 +373,7 @@ App.Pages.Booking = (function () {
          * When the user clicks on a service, its available providers should
          * become visible.
          */
-        $selectService.off('change').on('change', (event) => {
+        $selectService.on('change', (event) => {
             const $target = $(event.target);
             const serviceId = $selectService.val();
             $selectProvider.parent().prop('hidden', !Boolean(serviceId));
@@ -418,7 +424,7 @@ App.Pages.Booking = (function () {
          * This handler is triggered every time the user pressed the "next" button on the book wizard.
          * Some special tasks might be performed, depending on the current wizard step.
          */
-        $('.button-next').off('click').on('click', (event) => {
+        $('.button-next').on('click', (event) => {
             const $target = $(event.currentTarget);
 
             // If we are on the first step and there is no provider selected do not continue with the next step.
@@ -475,7 +481,7 @@ App.Pages.Booking = (function () {
          * This handler is triggered every time the user pressed the "back" button on the
          * book wizard.
          */
-        $('.button-back').off('click').on('click', (event) => {
+        $('.button-back').on('click', (event) => {
             const prevTabIndex = parseInt($(event.currentTarget).attr('data-step_index')) - 1;
 
             $(event.currentTarget)
@@ -493,7 +499,7 @@ App.Pages.Booking = (function () {
          *
          * Triggered whenever the user clicks on an available hour for his appointment.
          */
-        $availableHours.off('click', '.available-hour').on('click', '.available-hour', (event) => {
+        $availableHours.on('click', '.available-hour', (event) => {
             $availableHours.find('.selected-hour').removeClass('selected-hour');
             $(event.target).addClass('selected-hour');
             App.Pages.Booking.updateConfirmFrame();
@@ -509,7 +515,7 @@ App.Pages.Booking = (function () {
              *
              * @param {jQuery.Event} event
              */
-            $('#cancel-appointment').off('click').on('click', () => {
+            $('#cancel-appointment').on('click', () => {
                 const $cancelAppointmentForm = $('#cancel-appointment-form');
 
                 let $cancellationReason;
@@ -552,7 +558,7 @@ App.Pages.Booking = (function () {
                 return false;
             });
 
-            $deletePersonalInformation.off('click').on('click', () => {
+            $deletePersonalInformation.on('click', () => {
                 const buttons = [
                     {
                         text: lang('cancel'),
@@ -584,7 +590,7 @@ App.Pages.Booking = (function () {
          *
          * @param {jQuery.Event} event
          */
-        $bookAppointmentSubmit.off('click').on('click', () => {
+        $bookAppointmentSubmit.on('click', () => {
             const $acceptToTermsAndConditions = $('#accept-to-terms-and-conditions');
 
             $acceptToTermsAndConditions.removeClass('is-invalid');
@@ -609,7 +615,7 @@ App.Pages.Booking = (function () {
         /**
          * Event: Refresh captcha image.
          */
-        $captchaTitle.off('click', 'button').on('click', 'button', () => {
+        $captchaTitle.on('click', 'button', () => {
             $('.captcha-image').attr('src', App.Utils.Url.siteUrl('captcha?' + Date.now()));
         });
 
@@ -622,54 +628,97 @@ App.Pages.Booking = (function () {
         /**
          * Event: Mutual exclusion for Marketplace, Sucursales, Distribuidores fields
          *
-         * When one of these fields is selected, the other two should be disabled
+         * When one of these fields is selected, the other two should be disabled.
+         * Uses case-insensitive comparison to handle varying DB field name casing.
          */
-        $(document).off('change', '.custom-field-input[data-field-name="Marketplace"], .custom-field-input[data-field-name="Sucursales"], .custom-field-input[data-field-name="Distribuidores"]').on('change', '.custom-field-input[data-field-name="Marketplace"], .custom-field-input[data-field-name="Sucursales"], .custom-field-input[data-field-name="Distribuidores"]', function() {
+        $(document).on('change', '.custom-field-input', function() {
             const $changedField = $(this);
-            const changedFieldName = $changedField.data('field-name');
+            const changedFieldName = ($changedField.data('field-name') || '').toLowerCase();
+            const exclusiveFieldNames = ['marketplace', 'sucursales', 'distribuidores'];
+
+            if (!exclusiveFieldNames.includes(changedFieldName)) return;
+
             const hasValue = $changedField.val() && $changedField.val() !== '';
 
-            // Define the three mutually exclusive fields
-            const exclusiveFields = ['Marketplace', 'Sucursales', 'Distribuidores'];
+            // Helper: find a custom field input by case-insensitive name
+            const $getExclusiveField = (name) => $('.custom-field-input').filter(function() {
+                return ($(this).data('field-name') || '').toLowerCase() === name;
+            });
 
             if (hasValue) {
                 // Disable and clear the other two fields
-                exclusiveFields.forEach(fieldName => {
+                exclusiveFieldNames.forEach(fieldName => {
                     if (fieldName !== changedFieldName) {
-                        const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
-                        // Save the original required state
-                        if ($field.hasClass('required')) {
-                            $field.attr('data-was-required', 'true');
-                        }
+                        const $field = $getExclusiveField(fieldName);
                         $field.prop('disabled', true);
                         $field.val('');
-                        $field.removeClass('is-invalid required');
+                        $field.removeClass('is-invalid');
                     }
                 });
             } else {
-                // Check if any of the three fields has a value
+                // Check if any other exclusive field has a value
                 let anyFieldHasValue = false;
-                exclusiveFields.forEach(fieldName => {
-                    const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
-                    if ($field.val() && $field.val() !== '' && fieldName !== changedFieldName) {
-                        anyFieldHasValue = true;
+                exclusiveFieldNames.forEach(fieldName => {
+                    if (fieldName !== changedFieldName) {
+                        const $field = $getExclusiveField(fieldName);
+                        if ($field.val() && $field.val() !== '') {
+                            anyFieldHasValue = true;
+                        }
                     }
                 });
 
                 // If no field has value, enable all three fields
                 if (!anyFieldHasValue) {
-                    exclusiveFields.forEach(fieldName => {
-                        const $field = $(`.custom-field-input[data-field-name="${fieldName}"]`);
-                        $field.prop('disabled', false);
-                        // Restore the required class if it was originally required
-                        if ($field.attr('data-was-required') === 'true') {
-                            $field.addClass('required');
-                            $field.removeAttr('data-was-required');
-                        }
+                    exclusiveFieldNames.forEach(fieldName => {
+                        $getExclusiveField(fieldName).prop('disabled', false);
                     });
                 }
             }
         });
+    }
+
+    /**
+     * Apply mutual exclusion logic for Marketplace, Sucursales, Distribuidores on page load.
+     * Handles browser autocomplete and manage mode pre-filled values.
+     * Uses case-insensitive field name matching.
+     */
+    function applyMutualExclusionOnLoad() {
+        const exclusiveFieldNames = ['marketplace', 'sucursales', 'distribuidores'];
+
+        // Helper: find a custom field input by case-insensitive name
+        const $getExclusiveField = (name) => $('.custom-field-input').filter(function() {
+            return ($(this).data('field-name') || '').toLowerCase() === name;
+        });
+
+        let filledFieldName = null;
+
+        // Find which field (if any) has a real value (last one wins if multiple)
+        exclusiveFieldNames.forEach(fieldName => {
+            const $field = $getExclusiveField(fieldName);
+            if ($field.length && $field.val() && $field.val() !== '' && $field.val() !== 'N/A') {
+                filledFieldName = fieldName;
+            }
+        });
+
+        if (filledFieldName) {
+            // Disable the other two fields
+            exclusiveFieldNames.forEach(fieldName => {
+                if (fieldName !== filledFieldName) {
+                    const $field = $getExclusiveField(fieldName);
+                    $field.prop('disabled', true);
+                    $field.val('');
+                }
+            });
+        } else {
+            // No field has a value - ensure all are enabled and clear any 'N/A' values
+            exclusiveFieldNames.forEach(fieldName => {
+                const $field = $getExclusiveField(fieldName);
+                $field.prop('disabled', false);
+                if ($field.val() === 'N/A') {
+                    $field.val('');
+                }
+            });
+        }
     }
 
     /**
@@ -813,10 +862,11 @@ App.Pages.Booking = (function () {
             addressParts.push(zipCode);
         }
 
-        // Collect dynamic custom fields for display
+        // Collect dynamic custom fields for display (skip disabled fields)
         const customFieldsDisplay = [];
         $('.custom-field-input').each(function () {
             const $field = $(this);
+            if ($field.prop('disabled')) return; // skip mutually-exclusive fields that are disabled
             const fieldLabel = $field.data('field-label');
             const fieldValue = $field.val();
             if (fieldLabel && fieldValue) {
@@ -881,11 +931,25 @@ App.Pages.Booking = (function () {
 
         // Collect dynamic custom fields
         const customFieldsData = {};
+        const mutuallyExclusiveFieldNames = ['marketplace', 'sucursales', 'distribuidores'];
         $('.custom-field-input').each(function () {
             const $field = $(this);
             const fieldName = $field.data('field-name');
+            if (!fieldName) return;
+            const isMutuallyExclusive = mutuallyExclusiveFieldNames.includes(fieldName.toLowerCase());
+            if ($field.prop('disabled')) {
+                // For mutually exclusive fields, mark as N/A so it appears in the email
+                if (isMutuallyExclusive) {
+                    customFieldsData[fieldName] = 'N/A';
+                }
+                return;
+            }
             const fieldValue = $field.val();
-            if (fieldName && fieldValue) {
+            if (isMutuallyExclusive) {
+                // Always send a value for mutually exclusive fields so the server
+                // overwrites any stale values from previous bookings in the DB.
+                customFieldsData[fieldName] = fieldValue || 'N/A';
+            } else if (fieldValue) {
                 customFieldsData[fieldName] = fieldValue;
             }
         });
@@ -1009,6 +1073,9 @@ App.Pages.Booking = (function () {
                     }
                 });
             }
+
+            // Apply mutual exclusion after setting values (in case manage mode pre-fills fields)
+            applyMutualExclusionOnLoad();
 
             App.Pages.Booking.updateConfirmFrame();
 

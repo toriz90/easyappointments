@@ -490,6 +490,7 @@ $lang['ldap_dn'] = 'LDAP DN';
 $lang['role'] = 'Rol';
 $lang['at_least_one_field_required'] = 'Al menos un campo debe estar establecido como obligatorio en la página de reservas.';
 $lang['customer_is_already_booked'] = 'Este cliente ya tiene una cita durante el período de reserva solicitado.';
+$lang['customer_already_has_appointment'] = 'Ya tienes una cita programada. Por favor cancela tu cita existente antes de agendar una nueva.';
 $lang['fields'] = 'Campos';
 $lang['invalid_credentials_provided'] = 'Credenciales inválidas proporcionadas, por favor intente nuevamente.';
 $lang['calendar_url'] = 'URL del Calendario';

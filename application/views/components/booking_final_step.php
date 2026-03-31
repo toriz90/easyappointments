@@ -15,7 +15,9 @@ $custom_fields = $custom_fields ?? [];
     <div class="frame-container">
         <h2 class="frame-title"><?= lang('appointment_confirmation') ?></h2>
 
-        <div class="row frame-content m-auto pt-md-4 mb-4">
+        <div id="booking-error-message" class="alert alert-danger d-none mx-3 mb-2" role="alert"></div>
+
+    <div class="row frame-content m-auto pt-md-4 mb-4">
             <div id="appointment-details" class="col-12 col-md-6 text-center text-md-start mb-2 mb-md-0">
                 <!-- JS -->
             </div>
