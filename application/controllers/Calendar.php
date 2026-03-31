@@ -289,6 +289,22 @@ class Calendar extends EA_Controller
 
                 // Save custom field values
                 if (!empty($custom_fields_data) && $this->db->table_exists('custom_field_values')) {
+                    // Server-side mutual exclusion enforcement
+                    $exclusive_names = ['marketplace', 'sucursales', 'distribuidores'];
+                    $exclusive_filled = null;
+                    foreach ($custom_fields_data as $key => $val) {
+                        if (in_array(strtolower($key), $exclusive_names) && $val !== '' && $val !== 'N/A') {
+                            $exclusive_filled = strtolower($key);
+                        }
+                    }
+                    if ($exclusive_filled !== null) {
+                        foreach ($custom_fields_data as $key => $val) {
+                            if (in_array(strtolower($key), $exclusive_names) && strtolower($key) !== $exclusive_filled) {
+                                $custom_fields_data[$key] = 'N/A';
+                            }
+                        }
+                    }
+
                     $this->load->model('custom_field_values_model');
                     $active_custom_fields = $this->custom_fields_model->query()
                         ->where('active', 1)

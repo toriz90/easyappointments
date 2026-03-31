@@ -506,6 +506,26 @@ class Booking extends EA_Controller
 
             // Save custom field values
             if (!empty($custom_fields_data)) {
+                // Server-side mutual exclusion: only one of marketplace/sucursales/distribuidores
+                // can have a real value. Determine which one was actually selected.
+                $exclusive_names = ['marketplace', 'sucursales', 'distribuidores'];
+                $exclusive_filled = null;
+                foreach ($exclusive_names as $ex_name) {
+                    foreach ($custom_fields_data as $key => $val) {
+                        if (strtolower($key) === $ex_name && $val !== '' && $val !== 'N/A') {
+                            $exclusive_filled = strtolower($key);
+                        }
+                    }
+                }
+                // Force the other two to N/A
+                if ($exclusive_filled !== null) {
+                    foreach ($custom_fields_data as $key => $val) {
+                        if (in_array(strtolower($key), $exclusive_names) && strtolower($key) !== $exclusive_filled) {
+                            $custom_fields_data[$key] = 'N/A';
+                        }
+                    }
+                }
+
                 $this->load->model('custom_field_values_model');
                 $custom_fields = $this->custom_fields_model->query()
                     ->where('active', 1)
