@@ -648,7 +648,7 @@ App.Components.AppointmentsModal = (function () {
             let missingRequiredField = false;
 
             $appointmentsModal.find('.required').each((index, requiredField) => {
-                if ($(requiredField).val() === '' || $(requiredField).val() === null) {
+                if (!$(requiredField).prop('disabled') && ($(requiredField).val() === '' || $(requiredField).val() === null)) {
                     $(requiredField).addClass('is-invalid');
                     missingRequiredField = true;
                 }
@@ -700,5 +700,6 @@ App.Components.AppointmentsModal = (function () {
     return {
         resetModal,
         validateAppointmentForm,
+        applyMutualExclusionOnLoad,
     };
 })();
