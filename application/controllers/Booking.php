@@ -448,6 +448,7 @@ class Booking extends EA_Controller
                     ->where('is_unavailability', false)
                     ->where('id_users_customer', $customer['id'])
                     ->where('start_datetime >=', $now)
+                    ->where('(status IS NULL OR (status != "Cancelled" AND status != "Cancelada"))')
                     ->get()
                     ->result_array();
 
