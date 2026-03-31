@@ -192,7 +192,6 @@ class Calendar extends EA_Controller
                     if ($custom_field['type'] === 'select') {
                         $custom_field['options'] = $this->custom_field_options_model->query()
                             ->where('id_custom_fields', $custom_field['id'])
-                            ->order_by('option_order', 'ASC')
                             ->get()
                             ->result_array();
                     } else {
