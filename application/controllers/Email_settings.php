@@ -113,6 +113,30 @@ class Email_settings extends EA_Controller
         }
     }
 
+    public function resend(): void
+    {
+        try {
+            if (cannot('edit', PRIV_SYSTEM_SETTINGS)) {
+                throw new RuntimeException('No tienes permisos para realizar esta acción.');
+            }
+
+            $appointment_id  = (int) request('appointment_id');
+            $recipient_type  = request('recipient_type');
+            $recipient_email = request('recipient_email');
+
+            if (!$appointment_id || !$recipient_type || !filter_var($recipient_email, FILTER_VALIDATE_EMAIL)) {
+                throw new RuntimeException('Parámetros inválidos.');
+            }
+
+            $this->load->library('notifications');
+            $this->notifications->resend_to($appointment_id, $recipient_type, $recipient_email);
+
+            json_response(['success' => true]);
+        } catch (Throwable $e) {
+            json_exception($e);
+        }
+    }
+
     public function log(): void
     {
         try {

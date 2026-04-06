@@ -339,6 +339,85 @@ class Notifications
     }
 
     /**
+     * Resend notification for a specific appointment and recipient.
+     *
+     * @param int    $appointment_id
+     * @param string $recipient_type  'customer' | 'provider' | 'admin' | 'secretary'
+     * @param string $recipient_email Target email address
+     *
+     * @throws RuntimeException If appointment not found or email fails
+     */
+    public function resend_to(int $appointment_id, string $recipient_type, string $recipient_email): void
+    {
+        $this->CI->load->model('appointments_model');
+        $this->CI->load->model('providers_model');
+        $this->CI->load->model('customers_model');
+        $this->CI->load->model('services_model');
+        $this->CI->load->model('settings_model');
+
+        $appointment = $this->CI->appointments_model->find($appointment_id);
+
+        if (!$appointment) {
+            throw new RuntimeException('Cita #' . $appointment_id . ' no encontrada.');
+        }
+
+        $provider  = $this->CI->providers_model->find($appointment['id_users_provider']);
+        $customer  = $this->CI->customers_model->find($appointment['id_users_customer']);
+        $service   = $this->CI->services_model->find($appointment['id_services']);
+        $settings  = ['company_name' => setting('company_name')];
+
+        $customer_link = site_url('booking/reschedule/' . $appointment['hash']);
+        $provider_link = site_url('calendar/reschedule/' . $appointment['hash']);
+        $ics_stream    = $this->CI->ics_file->get_stream($appointment, $service, $provider, $customer);
+
+        $current_language = config('language');
+
+        try {
+            switch ($recipient_type) {
+                case 'customer':
+                    config(['language' => $customer['language']]);
+                    $this->CI->lang->load('translations');
+                    $this->CI->email_messages->send_appointment_saved(
+                        $appointment, $provider, $service, $customer, $settings,
+                        lang('appointment_booked'), lang('thank_you_for_appointment'),
+                        $customer_link, $recipient_email, $ics_stream, $customer['timezone'],
+                    );
+                    break;
+
+                case 'provider':
+                    config(['language' => $provider['language']]);
+                    $this->CI->lang->load('translations');
+                    $this->CI->email_messages->send_appointment_saved(
+                        $appointment, $provider, $service, $customer, $settings,
+                        lang('appointment_added_to_your_plan'), lang('appointment_link_description'),
+                        $provider_link, $recipient_email, $ics_stream, $provider['timezone'],
+                    );
+                    break;
+
+                case 'admin':
+                case 'secretary':
+                    $this->CI->email_messages->send_appointment_saved(
+                        $appointment, $provider, $service, $customer, $settings,
+                        lang('appointment_added_to_your_plan'), lang('appointment_link_description'),
+                        $provider_link, $recipient_email, $ics_stream, $provider['timezone'],
+                    );
+                    break;
+
+                default:
+                    throw new RuntimeException('Tipo de destinatario no válido: ' . $recipient_type);
+            }
+
+            $this->log_email($appointment_id, 'saved', $recipient_type, $recipient_email, 'sent', 'resent manually');
+        } catch (Throwable $e) {
+            $this->log_email($appointment_id, 'saved', $recipient_type, $recipient_email, 'error', 'resend: ' . $e->getMessage());
+            throw $e;
+        } finally {
+            config(['language' => $current_language]);
+            $this->CI->lang->load('translations');
+        }
+    }
+
+    /**
      * Write a structured entry to the dedicated email log file.
      *
      * @param int|null    $appointment_id
