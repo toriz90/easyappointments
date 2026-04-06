@@ -575,9 +575,51 @@ class Appointments_model extends EA_Model
                 $appointment['id_google_calendar'] !== null ? $appointment['id_google_calendar'] : null,
             'caldavCalendarId' =>
                 $appointment['id_caldav_calendar'] !== null ? $appointment['id_caldav_calendar'] : null,
+            'customFields' => $this->decode_custom_fields_for_api($appointment['custom_fields'] ?? null),
         ];
 
         $appointment = $encoded_resource;
+    }
+
+    /**
+     * Parse the stored custom_fields JSON into a flat label→value map for API responses.
+     * Never throws — returns an empty object on any parse error.
+     *
+     * @param string|null $raw Raw JSON stored in the DB column.
+     *
+     * @return object Key-value object where keys are field labels and values are the stored values.
+     */
+    private function decode_custom_fields_for_api(?string $raw): object
+    {
+        if (empty($raw)) {
+            return new stdClass();
+        }
+
+        $parsed = json_decode($raw, true);
+
+        if (!is_array($parsed) || json_last_error() !== JSON_ERROR_NONE) {
+            return new stdClass();
+        }
+
+        $result = new stdClass();
+
+        foreach ($parsed as $field_id => $field_data) {
+            // Strict validation: key must be a positive integer, value must be an array
+            if (!ctype_digit((string) $field_id) || !is_array($field_data)) {
+                continue;
+            }
+
+            $label = isset($field_data['label']) ? (string) $field_data['label'] : null;
+            $value = isset($field_data['value']) ? (string) $field_data['value'] : null;
+
+            if (empty($label)) {
+                continue;
+            }
+
+            $result->{$label} = $value;
+        }
+
+        return $result;
     }
 
     /**
@@ -642,9 +684,121 @@ class Appointments_model extends EA_Model
             $decoded_request['id_caldav_calendar'] = $appointment['caldavCalendarId'];
         }
 
+        if (array_key_exists('customFields', $appointment)) {
+            $decoded_request['custom_fields'] = $this->encode_custom_fields_from_api(
+                $appointment['customFields'],
+                $decoded_request['custom_fields'] ?? null,
+            );
+        }
+
         $decoded_request['is_unavailability'] = false;
 
         $appointment = $decoded_request;
+    }
+
+    /**
+     * Convert the API customFields payload into the internal JSON format stored in the DB.
+     *
+     * Security measures:
+     *  - Field names are whitelisted against the ea_custom_fields table (no arbitrary injection).
+     *  - Values are stripped of HTML tags and capped at 500 characters.
+     *  - JSON structure integrity is enforced (numeric IDs, array entries).
+     *  - Mutual exclusion is applied: if one of the exclusive fields has a real value,
+     *    the others are forced to "N/A".
+     *
+     * @param mixed       $submitted    The `customFields` value from the API request (must be array/object).
+     * @param string|null $existing_raw Existing custom_fields JSON (for partial updates).
+     *
+     * @return string JSON string ready to be stored in the DB.
+     *
+     * @throws InvalidArgumentException If `customFields` is not an array/object or contains unknown field names.
+     */
+    private function encode_custom_fields_from_api(mixed $submitted, ?string $existing_raw): string
+    {
+        // Accept both arrays and objects from JSON body
+        if (is_object($submitted)) {
+            $submitted = (array) $submitted;
+        }
+
+        if (!is_array($submitted)) {
+            throw new InvalidArgumentException(
+                'El campo customFields debe ser un objeto JSON con pares nombre:valor.',
+            );
+        }
+
+        // Load all active custom field definitions from DB (single query, used as whitelist)
+        $CI = &get_instance();
+        $CI->load->model('custom_fields_model');
+        $defined_fields = $CI->custom_fields_model->get('active = 1');
+
+        // Build two lookup maps (by name and by label, both lowercase) → field row
+        $lookup = [];
+        foreach ($defined_fields as $cf) {
+            $lookup[strtolower(trim($cf['name']))]  = $cf;
+            $lookup[strtolower(trim($cf['label']))] = $cf;
+        }
+
+        // Start from the existing stored values (important for partial PUT updates)
+        $internal = [];
+        if (!empty($existing_raw)) {
+            $parsed_existing = json_decode($existing_raw, true);
+            if (is_array($parsed_existing) && json_last_error() === JSON_ERROR_NONE) {
+                foreach ($parsed_existing as $fid => $fdata) {
+                    if (ctype_digit((string) $fid) && is_array($fdata)) {
+                        $internal[(string) $fid] = $fdata;
+                    }
+                }
+            }
+        }
+
+        // Exclusive field names (by the `name` column, lowercase)
+        $exclusive_names  = ['marketplace', 'sucursales', 'distribuidores'];
+        $exclusive_winner = null;
+
+        // Process each submitted key
+        foreach ($submitted as $key => $value) {
+            $key_lower = strtolower(trim((string) $key));
+
+            if (!array_key_exists($key_lower, $lookup)) {
+                throw new InvalidArgumentException(
+                    'Campo personalizado no reconocido: "' . htmlspecialchars((string) $key, ENT_QUOTES, 'UTF-8') . '". ' .
+                    'Solo se permiten campos definidos en el sistema.',
+                );
+            }
+
+            $cf         = $lookup[$key_lower];
+            $safe_value = substr(strip_tags((string) $value), 0, 500);
+            $field_id   = (string) $cf['id'];
+
+            $internal[$field_id] = [
+                'label' => $cf['label'],
+                'value' => $safe_value,
+            ];
+
+            // Detect which exclusive field "wins"
+            if (
+                in_array(strtolower($cf['name']), $exclusive_names, true) &&
+                $safe_value !== 'N/A' &&
+                $safe_value !== ''
+            ) {
+                $exclusive_winner = strtolower($cf['name']);
+            }
+        }
+
+        // Enforce mutual exclusion: losing exclusive fields → 'N/A'
+        if ($exclusive_winner !== null) {
+            foreach ($defined_fields as $cf) {
+                $cf_name = strtolower($cf['name']);
+                if (in_array($cf_name, $exclusive_names, true) && $cf_name !== $exclusive_winner) {
+                    $internal[(string) $cf['id']] = [
+                        'label' => $cf['label'],
+                        'value' => 'N/A',
+                    ];
+                }
+            }
+        }
+
+        return json_encode($internal, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
     /**
