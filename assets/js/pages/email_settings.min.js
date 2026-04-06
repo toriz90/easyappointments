@@ -104,13 +104,26 @@ App.Pages.EmailSettings = (function () {
                 const badgeClass = STATUS_BADGES[e.status] || 'bg-secondary';
                 const eventLabel = EVENT_LABELS[e.event] || e.event;
                 const recipientLabel = RECIPIENT_LABELS[e.recipient_type] || e.recipient_type;
+                const canResend = e.status === 'error'
+                    && e.appointment_id !== '-'
+                    && e.recipient_email !== '-'
+                    && e.recipient_type !== 'system';
+                const retryBtn = canResend
+                    ? `<button class="btn btn-outline-danger btn-sm py-0 px-1 ms-1 retry-btn"
+                            data-appt="${e.appointment_id}"
+                            data-type="${e.recipient_type}"
+                            data-email="${e.recipient_email}"
+                            title="Reintentar envío">
+                            <i class="fas fa-redo fa-xs"></i>
+                        </button>`
+                    : '';
                 $body.append(`<tr>
                     <td class="text-nowrap small">${e.datetime}</td>
                     <td class="text-center">${e.appointment_id !== '-' ? '#' + e.appointment_id : '—'}</td>
                     <td>${eventLabel}</td>
                     <td>${recipientLabel}</td>
                     <td class="small">${e.recipient_email !== '-' ? e.recipient_email : '—'}</td>
-                    <td><span class="badge ${badgeClass}">${e.status}</span></td>
+                    <td><span class="badge ${badgeClass}">${e.status}</span>${retryBtn}</td>
                     <td class="small text-muted">${e.detail || ''}</td>
                 </tr>`);
             });
@@ -119,12 +132,34 @@ App.Pages.EmailSettings = (function () {
         });
     }
 
+    function onRetryClick() {
+        const $btn = $(this);
+        const apptId = $btn.data('appt');
+        const type   = $btn.data('type');
+        const email  = $btn.data('email');
+
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin fa-xs"></i>');
+
+        App.Http.EmailSettings.resend(apptId, type, email)
+            .done(() => {
+                App.Utils.Message.show('Correo reenviado', 'El correo fue enviado exitosamente a ' + email + '.');
+                loadLog();
+            })
+            .fail((jqXHR) => {
+                let msg = 'Error al reenviar el correo.';
+                try { msg = JSON.parse(jqXHR.responseText).message || msg; } catch(_) {}
+                App.Utils.Message.show('Error', msg);
+                $btn.prop('disabled', false).html('<i class="fas fa-redo fa-xs"></i>');
+            });
+    }
+
     function initialize() {
         deserialize(vars('email_settings') || []);
         $saveSettings.on('click', onSaveClick);
         $testEmail.on('click', onTestClick);
         $sendTestEmail.on('click', onSendTestClick);
         $('#refresh-log').on('click', loadLog);
+        $('#email-log-body').on('click', '.retry-btn', onRetryClick);
         loadLog();
     }
 
