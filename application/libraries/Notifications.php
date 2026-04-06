@@ -356,7 +356,9 @@ class Notifications
         string $status,
         string $detail = '',
     ): void {
-        $log_path = rtrim(realpath(APPPATH . '../') ?: APPPATH . '..', '/') . '/storage/logs/email_log.csv';
+        // Resolve storage/logs path robustly for Docker volume mounts
+        $base = realpath(APPPATH . '..') ?: realpath(APPPATH . '../') ?: dirname(APPPATH);
+        $log_path = rtrim($base, '/') . '/storage/logs/email_log.csv';
         $new_file = !file_exists($log_path);
 
         $line = implode(',', [
@@ -373,13 +375,19 @@ class Notifications
             file_put_contents($log_path, "datetime,appointment_id,event,recipient_type,recipient_email,status,detail\n");
         }
 
-        file_put_contents($log_path, $line, FILE_APPEND | LOCK_EX);
+        $written = file_put_contents($log_path, $line, FILE_APPEND | LOCK_EX);
 
-        // Also mirror to CI log for error cases.
+        // Always mirror to docker stderr (visible via docker logs) and CI log.
+        $log_entry = "[EMAIL_LOG] appt={$appointment_id} event={$event} to={$recipient_email} ({$recipient_type}) {$status}" .
+            ($detail ? " | {$detail}" : '') .
+            ($written === false ? " | [FILE WRITE FAILED: {$log_path}]" : '');
+
+        error_log($log_entry);
+
         if ($status === 'error') {
-            log_message('error', "[email_log] appointment={$appointment_id} event={$event} to={$recipient_email} ({$recipient_type}) ERROR: {$detail}");
+            log_message('error', $log_entry);
         } else {
-            log_message('info', "[email_log] appointment={$appointment_id} event={$event} to={$recipient_email} ({$recipient_type}) {$status}");
+            log_message('info', $log_entry);
         }
     }
 }
