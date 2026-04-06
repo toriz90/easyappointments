@@ -356,9 +356,15 @@ class Notifications
         string $status,
         string $detail = '',
     ): void {
-        // Resolve storage/logs path robustly for Docker volume mounts
-        $base = realpath(APPPATH . '..') ?: realpath(APPPATH . '../') ?: dirname(APPPATH);
-        $log_path = rtrim($base, '/') . '/storage/logs/email_log.csv';
+        // Resolve storage/logs path - walk up from APPPATH until storage/logs is found
+        $base = APPPATH;
+        for ($i = 0; $i < 4; $i++) {
+            $base = dirname($base);
+            if (is_dir($base . '/storage/logs')) {
+                break;
+            }
+        }
+        $log_path = $base . '/storage/logs/email_log.csv';
         $new_file = !file_exists($log_path);
 
         $line = implode(',', [
