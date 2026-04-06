@@ -356,7 +356,7 @@ class Notifications
         string $status,
         string $detail = '',
     ): void {
-        $log_path = APPPATH . '../../storage/logs/email_log.csv';
+        $log_path = rtrim(realpath(APPPATH . '../') ?: APPPATH . '..', '/') . '/storage/logs/email_log.csv';
         $new_file = !file_exists($log_path);
 
         $line = implode(',', [
