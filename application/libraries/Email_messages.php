@@ -219,6 +219,23 @@ class Email_messages
     }
 
     /**
+     * Send a test email to verify SMTP configuration.
+     *
+     * @param string $recipient_email
+     *
+     * @throws Exception
+     */
+    public function send_test(string $recipient_email): void
+    {
+        $from_name = setting('from_name') ?: config('from_name') ?: setting('company_name');
+        $subject = 'Correo de prueba — ' . ($from_name ?: 'EasyAppointments');
+        $html = '<p>Si recibes este correo, la configuración SMTP es correcta.</p>';
+
+        $php_mailer = $this->get_php_mailer($recipient_email, $subject, $html);
+        $php_mailer->send();
+    }
+
+    /**
      * Create PHP Mailer instance based on the email configuration.
      *
      * @param string|null $recipient_email
@@ -241,17 +258,18 @@ class Email_messages
 
         if (config('protocol') === 'smtp') {
             $php_mailer->isSMTP();
-            $php_mailer->Host = config('smtp_host');
-            $php_mailer->SMTPAuth = config('smtp_auth');
-            $php_mailer->Username = config('smtp_user');
-            $php_mailer->Password = config('smtp_pass');
-            $php_mailer->SMTPSecure = config('smtp_crypto');
-            $php_mailer->Port = config('smtp_port');
+            // DB settings override config file values (set from backend email settings page)
+            $php_mailer->Host       = setting('smtp_host')   ?: config('smtp_host');
+            $php_mailer->SMTPAuth   = (bool) (setting('smtp_auth') ?? config('smtp_auth'));
+            $php_mailer->Username   = setting('smtp_user')   ?: config('smtp_user');
+            $php_mailer->Password   = setting('smtp_pass')   ?: config('smtp_pass');
+            $php_mailer->SMTPSecure = setting('smtp_crypto') ?: config('smtp_crypto');
+            $php_mailer->Port       = (int) (setting('smtp_port') ?: config('smtp_port'));
         }
 
-        $from_name = config('from_name') ?: setting('company_name');
-        $from_address = config('from_address') ?: setting('company_email');
-        $reply_to_address = config('reply_to') ?: setting('company_email');
+        $from_name = setting('from_name') ?: config('from_name') ?: setting('company_name');
+        $from_address = setting('from_address') ?: config('from_address') ?: setting('company_email');
+        $reply_to_address = setting('reply_to') ?: config('reply_to') ?: setting('company_email');
 
         $php_mailer->setFrom($from_address, $from_name);
         $php_mailer->addReplyTo($reply_to_address);
