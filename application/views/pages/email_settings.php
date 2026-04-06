@@ -111,6 +111,36 @@
             </div>
         </div>
     </div>
+
+    <!-- Registro de correos -->
+    <div class="row mt-4">
+        <div class="col-sm-10 offset-sm-1">
+            <div class="d-flex justify-content-between align-items-center border-bottom mb-3 py-2">
+                <h4 class="text-black-50 mb-0 fw-light">Registro de correos</h4>
+                <button type="button" id="refresh-log" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-sync-alt me-1"></i> Actualizar
+                </button>
+            </div>
+            <div id="email-log-wrapper" class="table-responsive" style="max-height:400px; overflow-y:auto;">
+                <table class="table table-sm table-hover" id="email-log-table">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Fecha / Hora</th>
+                            <th>Cita #</th>
+                            <th>Evento</th>
+                            <th>Destinatario</th>
+                            <th>Correo</th>
+                            <th>Estado</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody id="email-log-body">
+                        <tr><td colspan="7" class="text-center text-muted py-3">Cargando…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Test Email Modal -->

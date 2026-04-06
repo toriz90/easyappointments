@@ -107,7 +107,54 @@ class Email_settings extends EA_Controller
             $this->load->library('email_messages');
             $this->email_messages->send_test($recipient);
 
-            json_response(['success' => true, 'message' => 'Test email sent to ' . $recipient]);
+            json_response(['success' => true, 'message' => 'Correo de prueba enviado a ' . $recipient]);
+        } catch (Throwable $e) {
+            json_exception($e);
+        }
+    }
+
+    public function log(): void
+    {
+        try {
+            if (cannot('view', PRIV_SYSTEM_SETTINGS)) {
+                throw new RuntimeException('No tienes permisos para ver este recurso.');
+            }
+
+            $base = APPPATH;
+            for ($i = 0; $i < 4; $i++) {
+                $base = dirname($base);
+                if (is_dir($base . '/storage/logs')) {
+                    break;
+                }
+            }
+            $log_path = $base . '/storage/logs/email_log.csv';
+
+            if (!file_exists($log_path)) {
+                json_response(['entries' => []]);
+                return;
+            }
+
+            $lines = file($log_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $headers = array_shift($lines); // remove header row
+
+            $entries = [];
+            foreach (array_reverse($lines) as $line) {
+                // Parse CSV line respecting quoted fields
+                $row = str_getcsv($line);
+                if (count($row) < 6) continue;
+                $entries[] = [
+                    'datetime'        => $row[0],
+                    'appointment_id'  => $row[1],
+                    'event'           => $row[2],
+                    'recipient_type'  => $row[3],
+                    'recipient_email' => $row[4],
+                    'status'          => $row[5],
+                    'detail'          => $row[6] ?? '',
+                ];
+                if (count($entries) >= 200) break;
+            }
+
+            json_response(['entries' => $entries]);
         } catch (Throwable $e) {
             json_exception($e);
         }

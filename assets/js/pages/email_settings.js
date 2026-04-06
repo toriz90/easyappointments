@@ -71,11 +71,61 @@ App.Pages.EmailSettings = (function () {
             });
     }
 
+    const STATUS_BADGES = {
+        sent:    'bg-success',
+        error:   'bg-danger',
+        skipped: 'bg-warning text-dark',
+        started: 'bg-secondary',
+    };
+
+    const EVENT_LABELS = {
+        saved:   'Nueva cita',
+        deleted: 'Cancelada',
+    };
+
+    const RECIPIENT_LABELS = {
+        customer:  'Cliente',
+        provider:  'Proveedor',
+        admin:     'Admin',
+        secretary: 'Secretaria',
+        system:    'Sistema',
+    };
+
+    function loadLog() {
+        App.Http.EmailSettings.log().done((response) => {
+            const $body = $('#email-log-body');
+            $body.empty();
+            const entries = response.entries || [];
+            if (!entries.length) {
+                $body.append('<tr><td colspan="7" class="text-center text-muted py-3">Sin registros aún.</td></tr>');
+                return;
+            }
+            entries.forEach((e) => {
+                const badgeClass = STATUS_BADGES[e.status] || 'bg-secondary';
+                const eventLabel = EVENT_LABELS[e.event] || e.event;
+                const recipientLabel = RECIPIENT_LABELS[e.recipient_type] || e.recipient_type;
+                $body.append(`<tr>
+                    <td class="text-nowrap small">${e.datetime}</td>
+                    <td class="text-center">${e.appointment_id !== '-' ? '#' + e.appointment_id : '—'}</td>
+                    <td>${eventLabel}</td>
+                    <td>${recipientLabel}</td>
+                    <td class="small">${e.recipient_email !== '-' ? e.recipient_email : '—'}</td>
+                    <td><span class="badge ${badgeClass}">${e.status}</span></td>
+                    <td class="small text-muted">${e.detail || ''}</td>
+                </tr>`);
+            });
+        }).fail(() => {
+            $('#email-log-body').html('<tr><td colspan="7" class="text-center text-danger py-3">Error al cargar el registro.</td></tr>');
+        });
+    }
+
     function initialize() {
         deserialize(vars('email_settings') || []);
         $saveSettings.on('click', onSaveClick);
         $testEmail.on('click', onTestClick);
         $sendTestEmail.on('click', onSendTestClick);
+        $('#refresh-log').on('click', loadLog);
+        loadLog();
     }
 
     document.addEventListener('DOMContentLoaded', initialize);
