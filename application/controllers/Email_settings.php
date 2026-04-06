@@ -31,17 +31,16 @@ class Email_settings extends EA_Controller
 
         $role_slug = session('role_slug');
 
-        // Load current email settings (DB values override config file values)
-        $email_settings = [
-            ['name' => 'smtp_host',   'value' => setting('smtp_host')   ?: config('smtp_host')],
-            ['name' => 'smtp_port',   'value' => setting('smtp_port')   ?: config('smtp_port')],
-            ['name' => 'smtp_crypto', 'value' => setting('smtp_crypto') ?: config('smtp_crypto')],
-            ['name' => 'smtp_user',   'value' => setting('smtp_user')   ?: config('smtp_user')],
-            ['name' => 'smtp_pass',   'value' => setting('smtp_pass')   ?: config('smtp_pass')],
-            ['name' => 'from_name',   'value' => setting('from_name')   ?: config('from_name')],
-            ['name' => 'from_address','value' => setting('from_address') ?: config('from_address')],
-            ['name' => 'reply_to',    'value' => setting('reply_to')    ?: config('reply_to')],
-        ];
+        // DB values take priority; fallback to config file values
+        $fields = ['smtp_host', 'smtp_port', 'smtp_crypto', 'smtp_user', 'smtp_pass', 'from_name', 'from_address', 'reply_to'];
+        $email_settings = [];
+        foreach ($fields as $field) {
+            $db_value = $this->settings_model->query()->where('name', $field)->get()->row_array();
+            $email_settings[] = [
+                'name'  => $field,
+                'value' => !empty($db_value['value']) ? $db_value['value'] : config($field),
+            ];
+        }
 
         script_vars([
             'user_id'        => $user_id,
