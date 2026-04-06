@@ -17,7 +17,7 @@ App.Http.EmailSettings = (function () {
 
     function log() {
         const url = App.Utils.Url.siteUrl('email_settings/log');
-        return $.get(url, {csrf_token: vars('csrf_token')});
+        return $.ajax({url, method: 'GET', cache: false, data: {csrf_token: vars('csrf_token')}});
     }
 
     return {save, test, log};
