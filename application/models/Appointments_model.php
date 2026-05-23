@@ -19,6 +19,27 @@
 class Appointments_model extends EA_Model
 {
     /**
+     * Service folio code mapping.
+     *
+     * Maps `ea_services.id` to the 3-letter code embedded in the folio. The folio format is
+     * `CS{CODE}-{SEQ}`, where SEQ is a 5-digit zero-padded sequence number independent per
+     * service (each service starts its own counter at 00001).
+     *
+     * To add a new service code or change an existing one, edit this constant — it is the
+     * single source of truth. Any service id not listed here uses DEFAULT_FOLIO_CODE.
+     */
+    public const SERVICE_FOLIO_CODES = [
+        1 => 'VER', // CENTRO DE SERVICIO
+        2 => 'IZA', // CENTRO DE SERVICIO IZAZAGA 1
+        3 => 'LON', // CENTRO DE SERVICIO LONDRES 112
+    ];
+
+    /**
+     * Fallback 3-letter code for any service id that is not present in SERVICE_FOLIO_CODES.
+     */
+    public const DEFAULT_FOLIO_CODE = 'CTR';
+
+    /**
      * @var array
      */
     protected array $casts = [
@@ -202,6 +223,12 @@ class Appointments_model extends EA_Model
     /**
      * Insert a new appointment into the database.
      *
+     * Real bookings receive a per-service folio (format `CS{CODE}-{NNNNN}`) generated inside a
+     * transaction that takes a row-level lock on the corresponding `ea_services` row, so two
+     * concurrent bookings of the same service cannot read the same MAX(seq) and end up with a
+     * duplicate folio. Unavailability blocks and rows missing `id_services` are inserted
+     * without a folio.
+     *
      * @param array $appointment Associative array with the appointment data.
      *
      * @return int Returns the appointment ID.
@@ -215,11 +242,65 @@ class Appointments_model extends EA_Model
         $appointment['update_datetime'] = date('Y-m-d H:i:s');
         $appointment['hash'] = random_string('alnum', 12);
 
-        if (!$this->db->insert('appointments', $appointment)) {
-            throw new RuntimeException('Could not insert appointment.');
+        $is_unavailability = filter_var($appointment['is_unavailability'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $id_services = isset($appointment['id_services']) ? (int) $appointment['id_services'] : 0;
+
+        if ($is_unavailability || $id_services <= 0) {
+            if (!$this->db->insert('appointments', $appointment)) {
+                throw new RuntimeException('Could not insert appointment.');
+            }
+
+            return (int) $this->db->insert_id();
         }
 
-        return $this->db->insert_id();
+        $insert_id = 0;
+
+        $this->db->trans_start();
+
+        // Row-level lock on the service definition serializes folio generation for this service
+        // (other connections requesting the same service wait until this transaction commits).
+        $this->db->query(
+            'SELECT id FROM ' . $this->db->dbprefix('services') . ' WHERE id = ? FOR UPDATE',
+            [$id_services],
+        );
+
+        $prefix = 'CS' . self::folio_code_for_service($id_services) . '-';
+        $substr_start = strlen($prefix) + 1;
+
+        $row = $this->db
+            ->select('MAX(CAST(SUBSTRING(folio, ' . (int) $substr_start . ') AS UNSIGNED)) AS last_seq', false)
+            ->from('appointments')
+            ->where('id_services', $id_services)
+            ->where('folio IS NOT NULL', null, false)
+            ->like('folio', $prefix, 'after')
+            ->get()
+            ->row_array();
+
+        $next_seq = (int) ($row['last_seq'] ?? 0) + 1;
+        $appointment['folio'] = $prefix . str_pad((string) $next_seq, 5, '0', STR_PAD_LEFT);
+
+        $this->db->insert('appointments', $appointment);
+        $insert_id = (int) $this->db->insert_id();
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false || $insert_id <= 0) {
+            throw new RuntimeException('Could not insert appointment with folio.');
+        }
+
+        return $insert_id;
+    }
+
+    /**
+     * Resolve the 3-letter folio code for a given service id.
+     *
+     * @param int $id_services The service id (`ea_services.id`).
+     *
+     * @return string The mapped code from SERVICE_FOLIO_CODES, or DEFAULT_FOLIO_CODE if unmapped.
+     */
+    public static function folio_code_for_service(int $id_services): string
+    {
+        return self::SERVICE_FOLIO_CODES[$id_services] ?? self::DEFAULT_FOLIO_CODE;
     }
 
     /**
