@@ -54,6 +54,7 @@ class Booking extends EA_Controller
         'id_users_provider',
         'id_users_customer',
         'id_services',
+        'custom_fields',
     ];
 
     /**
@@ -275,23 +276,44 @@ class Booking extends EA_Controller
             $customer = $this->customers_model->find($appointment['id_users_customer']);
             $customer_token = md5(uniqid(mt_rand(), true));
 
-            // Load custom field values for this customer (with safety check)
+            // Load custom field values to pre-fill the rescheduling form.
+            // Prefer the per-appointment JSON snapshot; fall back to the legacy per-customer table
+            // for appointments created before the per-appointment storage was introduced.
             try {
-                if ($this->db->table_exists('custom_field_values')) {
+                $custom_fields_data = [];
+
+                if (!empty($appointment['custom_fields'])) {
+                    $parsed = json_decode($appointment['custom_fields'], true);
+                    if (is_array($parsed)) {
+                        foreach ($parsed as $field_id => $field_data) {
+                            if (!ctype_digit((string) $field_id) || !is_array($field_data)) {
+                                continue;
+                            }
+                            try {
+                                $custom_field = $this->custom_fields_model->find((int) $field_id);
+                            } catch (Throwable $e) {
+                                continue;
+                            }
+                            if ($custom_field && $custom_field['active']) {
+                                $custom_fields_data[$custom_field['name']] = $field_data['value'] ?? '';
+                            }
+                        }
+                    }
+                } elseif ($this->db->table_exists('custom_field_values')) {
                     $this->load->model('custom_field_values_model');
                     $custom_field_values = $this->custom_field_values_model->get(['id_users' => $customer['id']]);
-                    $custom_fields_data = [];
                     foreach ($custom_field_values as $value) {
                         $custom_field = $this->custom_fields_model->find($value['id_custom_fields']);
                         if ($custom_field && $custom_field['active']) {
                             $custom_fields_data[$custom_field['name']] = $value['value'];
                         }
                     }
-                    if (!empty($custom_fields_data)) {
-                        $customer['custom_fields_data'] = $custom_fields_data;
-                    }
                 }
-            } catch (Exception $e) {
+
+                if (!empty($custom_fields_data)) {
+                    $customer['custom_fields_data'] = $custom_fields_data;
+                }
+            } catch (Throwable $e) {
                 log_message('error', 'Error loading custom field values in booking: ' . $e->getMessage());
             }
 
@@ -505,69 +527,13 @@ class Booking extends EA_Controller
             $customer_id = $this->customers_model->save($customer);
             $customer = $this->customers_model->find($customer_id);
 
-            // Save custom field values
+            // Encode custom fields as JSON to be stored per-appointment.
+            // The model centralizes whitelist validation, sanitization and mutual exclusion logic.
             if (!empty($custom_fields_data)) {
-                // Server-side mutual exclusion: only one of marketplace/sucursales/distribuidores
-                // can have a real value. Determine which one was actually selected.
-                $exclusive_names = ['marketplace', 'sucursales', 'distribuidores'];
-                $exclusive_filled = null;
-                foreach ($exclusive_names as $ex_name) {
-                    foreach ($custom_fields_data as $key => $val) {
-                        if (strtolower($key) === $ex_name && $val !== '' && $val !== 'N/A') {
-                            $exclusive_filled = strtolower($key);
-                        }
-                    }
-                }
-                // Force the other two to N/A
-                if ($exclusive_filled !== null) {
-                    foreach ($custom_fields_data as $key => $val) {
-                        if (in_array(strtolower($key), $exclusive_names) && strtolower($key) !== $exclusive_filled) {
-                            $custom_fields_data[$key] = 'N/A';
-                        }
-                    }
-                }
-
-                $this->load->model('custom_field_values_model');
-                $custom_fields = $this->custom_fields_model->query()
-                    ->where('active', 1)
-                    ->order_by('sort_order', 'ASC')
-                    ->get()
-                    ->result_array();
-
-                // Ensure all non-winning exclusive fields are set to N/A in $custom_fields_data,
-                // even if they were not submitted by the frontend (e.g., field not in DOM).
-                if ($exclusive_filled !== null) {
-                    foreach ($custom_fields as $cf) {
-                        $cf_lower = strtolower($cf['name']);
-                        if (in_array($cf_lower, $exclusive_names) && $cf_lower !== $exclusive_filled) {
-                            $custom_fields_data[$cf['name']] = 'N/A';
-                        }
-                    }
-                }
-
-                foreach ($custom_fields as $custom_field) {
-                    $field_name = $custom_field['name'];
-                    if (isset($custom_fields_data[$field_name])) {
-                        // Check if value already exists
-                        $existing_value = $this->custom_field_values_model->query()
-                            ->where('id_custom_fields', $custom_field['id'])
-                            ->where('id_users', $customer_id)
-                            ->get()
-                            ->result_array();
-
-                        $value_data = [
-                            'id_custom_fields' => $custom_field['id'],
-                            'id_users' => $customer_id,
-                            'value' => $custom_fields_data[$field_name],
-                        ];
-
-                        if (!empty($existing_value)) {
-                            $value_data['id'] = $existing_value[0]['id'];
-                        }
-
-                        $this->custom_field_values_model->save($value_data);
-                    }
-                }
+                $appointment['custom_fields'] = $this->appointments_model->encode_custom_fields(
+                    $custom_fields_data,
+                    null,
+                );
             }
 
             $appointment['id_users_customer'] = $customer_id;

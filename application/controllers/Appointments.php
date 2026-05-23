@@ -35,6 +35,7 @@ class Appointments extends EA_Controller
         'id_users_provider',
         'id_users_customer',
         'id_services',
+        'custom_fields',
     ];
 
     public array $optional_appointment_fields = [
@@ -133,6 +134,8 @@ class Appointments extends EA_Controller
 
             $appointment = json_decode(request('appointment'), true);
 
+            $this->encode_custom_fields_payload($appointment);
+
             $this->appointments_model->only($appointment, $this->allowed_appointment_fields);
 
             $this->appointments_model->optional($appointment, $this->optional_appointment_fields);
@@ -184,6 +187,8 @@ class Appointments extends EA_Controller
 
             $appointment = json_decode(request('appointment'), true);
 
+            $this->encode_custom_fields_payload($appointment);
+
             $this->appointments_model->only($appointment, $this->allowed_appointment_fields);
 
             $this->appointments_model->optional($appointment, $this->optional_appointment_fields);
@@ -223,5 +228,40 @@ class Appointments extends EA_Controller
         } catch (Throwable $e) {
             json_exception($e);
         }
+    }
+
+    /**
+     * Normalize a custom_fields_data payload into the JSON column format used by ea_appointments.
+     *
+     * Accepts an optional `custom_fields_data` key in the payload (name/label → value pairs); if
+     * present, it is converted via the model and written into `custom_fields`. The original key is
+     * removed so it does not reach the allowed-fields filter.
+     *
+     * @param array $appointment Appointment payload (modified in place).
+     */
+    private function encode_custom_fields_payload(array &$appointment): void
+    {
+        if (empty($appointment['custom_fields_data']) || !is_array($appointment['custom_fields_data'])) {
+            unset($appointment['custom_fields_data']);
+            return;
+        }
+
+        $custom_fields_data = $appointment['custom_fields_data'];
+        unset($appointment['custom_fields_data']);
+
+        $existing_raw = null;
+        if (!empty($appointment['id'])) {
+            try {
+                $current = $this->appointments_model->find((int) $appointment['id']);
+                $existing_raw = $current['custom_fields'] ?? null;
+            } catch (Throwable $e) {
+                $existing_raw = null;
+            }
+        }
+
+        $appointment['custom_fields'] = $this->appointments_model->encode_custom_fields(
+            $custom_fields_data,
+            $existing_raw,
+        );
     }
 }

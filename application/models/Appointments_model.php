@@ -575,7 +575,7 @@ class Appointments_model extends EA_Model
                 $appointment['id_google_calendar'] !== null ? $appointment['id_google_calendar'] : null,
             'caldavCalendarId' =>
                 $appointment['id_caldav_calendar'] !== null ? $appointment['id_caldav_calendar'] : null,
-            'customFields' => $this->decode_custom_fields_for_api($appointment['custom_fields'] ?? null),
+            'customFields' => $this->decode_custom_fields($appointment['custom_fields'] ?? null),
         ];
 
         $appointment = $encoded_resource;
@@ -589,7 +589,7 @@ class Appointments_model extends EA_Model
      *
      * @return object Key-value object where keys are field labels and values are the stored values.
      */
-    private function decode_custom_fields_for_api(?string $raw): object
+    public function decode_custom_fields(?string $raw): object
     {
         if (empty($raw)) {
             return new stdClass();
@@ -685,7 +685,7 @@ class Appointments_model extends EA_Model
         }
 
         if (array_key_exists('customFields', $appointment)) {
-            $decoded_request['custom_fields'] = $this->encode_custom_fields_from_api(
+            $decoded_request['custom_fields'] = $this->encode_custom_fields(
                 $appointment['customFields'],
                 $decoded_request['custom_fields'] ?? null,
             );
@@ -697,7 +697,10 @@ class Appointments_model extends EA_Model
     }
 
     /**
-     * Convert the API customFields payload into the internal JSON format stored in the DB.
+     * Convert a custom_fields payload (from the API, booking form or calendar modal) into the
+     * internal JSON format stored in the `ea_appointments.custom_fields` column.
+     *
+     * Accepts arrays/objects keyed by either the field `name` or `label` (case-insensitive).
      *
      * Security measures:
      *  - Field names are whitelisted against the ea_custom_fields table (no arbitrary injection).
@@ -706,14 +709,14 @@ class Appointments_model extends EA_Model
      *  - Mutual exclusion is applied: if one of the exclusive fields has a real value,
      *    the others are forced to "N/A".
      *
-     * @param mixed       $submitted    The `customFields` value from the API request (must be array/object).
+     * @param mixed       $submitted    The custom fields payload (must be array/object).
      * @param string|null $existing_raw Existing custom_fields JSON (for partial updates).
      *
      * @return string JSON string ready to be stored in the DB.
      *
-     * @throws InvalidArgumentException If `customFields` is not an array/object or contains unknown field names.
+     * @throws InvalidArgumentException If the payload is not an array/object or contains unknown field names.
      */
-    private function encode_custom_fields_from_api(mixed $submitted, ?string $existing_raw): string
+    public function encode_custom_fields(mixed $submitted, ?string $existing_raw): string
     {
         // Accept both arrays and objects from JSON body
         if (is_object($submitted)) {
@@ -722,7 +725,7 @@ class Appointments_model extends EA_Model
 
         if (!is_array($submitted)) {
             throw new InvalidArgumentException(
-                'El campo customFields debe ser un objeto JSON con pares nombre:valor.',
+                'El payload de campos personalizados debe ser un objeto/arreglo con pares nombre:valor.',
             );
         }
 

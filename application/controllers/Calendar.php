@@ -56,6 +56,7 @@ class Calendar extends EA_Controller
         'id_users_provider',
         'id_users_customer',
         'id_services',
+        'custom_fields',
     ];
 
     public array $optional_appointment_fields = [
@@ -286,63 +287,23 @@ class Calendar extends EA_Controller
 
                 $customer['id'] = $this->customers_model->save($customer);
 
-                // Save custom field values
-                if (!empty($custom_fields_data) && $this->db->table_exists('custom_field_values')) {
-                    // Server-side mutual exclusion enforcement
-                    $exclusive_names = ['marketplace', 'sucursales', 'distribuidores'];
-                    $exclusive_filled = null;
-                    foreach ($custom_fields_data as $key => $val) {
-                        if (in_array(strtolower($key), $exclusive_names) && $val !== '' && $val !== 'N/A') {
-                            $exclusive_filled = strtolower($key);
-                        }
-                    }
-                    if ($exclusive_filled !== null) {
-                        foreach ($custom_fields_data as $key => $val) {
-                            if (in_array(strtolower($key), $exclusive_names) && strtolower($key) !== $exclusive_filled) {
-                                $custom_fields_data[$key] = 'N/A';
-                            }
+                // Encode custom fields as JSON to be stored per-appointment.
+                // For updates, preserve any existing values that the payload does not overwrite.
+                if (!empty($custom_fields_data)) {
+                    $existing_raw = null;
+                    if (!empty($appointment_data['id'])) {
+                        try {
+                            $current = $this->appointments_model->find((int) $appointment_data['id']);
+                            $existing_raw = $current['custom_fields'] ?? null;
+                        } catch (Throwable $e) {
+                            $existing_raw = null;
                         }
                     }
 
-                    $this->load->model('custom_field_values_model');
-                    $active_custom_fields = $this->custom_fields_model->query()
-                        ->where('active', 1)
-                        ->get()
-                        ->result_array();
-
-                    // Ensure all non-winning exclusive fields are set to N/A in $custom_fields_data,
-                    // even if they were not submitted by the frontend.
-                    if ($exclusive_filled !== null) {
-                        foreach ($active_custom_fields as $cf) {
-                            $cf_lower = strtolower($cf['name']);
-                            if (in_array($cf_lower, $exclusive_names) && $cf_lower !== $exclusive_filled) {
-                                $custom_fields_data[$cf['name']] = 'N/A';
-                            }
-                        }
-                    }
-
-                    foreach ($active_custom_fields as $custom_field) {
-                        $field_name = $custom_field['name'];
-                        if (isset($custom_fields_data[$field_name])) {
-                            $existing_value = $this->custom_field_values_model->query()
-                                ->where('id_custom_fields', $custom_field['id'])
-                                ->where('id_users', $customer['id'])
-                                ->get()
-                                ->result_array();
-
-                            $value_data = [
-                                'id_custom_fields' => $custom_field['id'],
-                                'id_users' => $customer['id'],
-                                'value' => $custom_fields_data[$field_name],
-                            ];
-
-                            if (!empty($existing_value)) {
-                                $value_data['id'] = $existing_value[0]['id'];
-                            }
-
-                            $this->custom_field_values_model->save($value_data);
-                        }
-                    }
+                    $appointment_data['custom_fields'] = $this->appointments_model->encode_custom_fields(
+                        $custom_fields_data,
+                        $existing_raw,
+                    );
                 }
             }
 
@@ -670,27 +631,46 @@ class Calendar extends EA_Controller
                 $appointment['service'] = $this->services_model->find($appointment['id_services']);
                 $appointment['customer'] = $this->customers_model->find($appointment['id_users_customer']);
 
-                // Load custom field values for the customer (with safety check)
+                // Load custom field values for the appointment.
+                // Prefer the per-appointment JSON snapshot stored in ea_appointments.custom_fields;
+                // fall back to the legacy per-customer table for appointments created before this change.
                 try {
-                    if ($this->db->table_exists('custom_field_values')) {
+                    $decoded_fields = [];
+
+                    if (!empty($appointment['custom_fields'])) {
+                        $parsed = json_decode($appointment['custom_fields'], true);
+                        if (is_array($parsed)) {
+                            foreach ($parsed as $field_id => $field_data) {
+                                if (ctype_digit((string) $field_id) && is_array($field_data) && !empty($field_data['label'])) {
+                                    $decoded_fields[(int) $field_id] = [
+                                        'label' => $field_data['label'],
+                                        'value' => $field_data['value'] ?? '',
+                                    ];
+                                }
+                            }
+                        }
+                    } elseif ($this->db->table_exists('custom_field_values')) {
                         $this->load->model('custom_field_values_model');
                         $this->load->model('custom_fields_model');
                         $custom_field_values = $this->custom_field_values_model->get_by_user($appointment['customer']['id']);
-                        $custom_fields = [];
                         foreach ($custom_field_values as $value) {
                             $custom_field = $this->custom_fields_model->find($value['id_custom_fields']);
                             if ($custom_field && $custom_field['active']) {
-                                $custom_fields[$custom_field['id']] = [
+                                $decoded_fields[$custom_field['id']] = [
                                     'label' => $custom_field['label'],
-                                    'value' => $value['value']
+                                    'value' => $value['value'],
                                 ];
                             }
                         }
-                        if (!empty($custom_fields)) {
-                            $appointment['custom_fields'] = $custom_fields;
-                        }
                     }
-                } catch (Exception $e) {
+
+                    if (!empty($decoded_fields)) {
+                        $appointment['custom_fields'] = $decoded_fields;
+                    } else {
+                        // Avoid leaking the raw JSON string to the frontend when no fields decode.
+                        unset($appointment['custom_fields']);
+                    }
+                } catch (Throwable $e) {
                     log_message('error', 'Error loading custom field values in calendar: ' . $e->getMessage());
                 }
             }
@@ -830,27 +810,46 @@ class Calendar extends EA_Controller
                 $appointment['service'] = $this->services_model->find($appointment['id_services']);
                 $appointment['customer'] = $this->customers_model->find($appointment['id_users_customer']);
 
-                // Load custom field values for the customer (with safety check)
+                // Load custom field values for the appointment.
+                // Prefer the per-appointment JSON snapshot stored in ea_appointments.custom_fields;
+                // fall back to the legacy per-customer table for appointments created before this change.
                 try {
-                    if ($this->db->table_exists('custom_field_values')) {
+                    $decoded_fields = [];
+
+                    if (!empty($appointment['custom_fields'])) {
+                        $parsed = json_decode($appointment['custom_fields'], true);
+                        if (is_array($parsed)) {
+                            foreach ($parsed as $field_id => $field_data) {
+                                if (ctype_digit((string) $field_id) && is_array($field_data) && !empty($field_data['label'])) {
+                                    $decoded_fields[(int) $field_id] = [
+                                        'label' => $field_data['label'],
+                                        'value' => $field_data['value'] ?? '',
+                                    ];
+                                }
+                            }
+                        }
+                    } elseif ($this->db->table_exists('custom_field_values')) {
                         $this->load->model('custom_field_values_model');
                         $this->load->model('custom_fields_model');
                         $custom_field_values = $this->custom_field_values_model->get_by_user($appointment['customer']['id']);
-                        $custom_fields = [];
                         foreach ($custom_field_values as $value) {
                             $custom_field = $this->custom_fields_model->find($value['id_custom_fields']);
                             if ($custom_field && $custom_field['active']) {
-                                $custom_fields[$custom_field['id']] = [
+                                $decoded_fields[$custom_field['id']] = [
                                     'label' => $custom_field['label'],
-                                    'value' => $value['value']
+                                    'value' => $value['value'],
                                 ];
                             }
                         }
-                        if (!empty($custom_fields)) {
-                            $appointment['custom_fields'] = $custom_fields;
-                        }
                     }
-                } catch (Exception $e) {
+
+                    if (!empty($decoded_fields)) {
+                        $appointment['custom_fields'] = $decoded_fields;
+                    } else {
+                        // Avoid leaking the raw JSON string to the frontend when no fields decode.
+                        unset($appointment['custom_fields']);
+                    }
+                } catch (Throwable $e) {
                     log_message('error', 'Error loading custom field values in calendar: ' . $e->getMessage());
                 }
             }
