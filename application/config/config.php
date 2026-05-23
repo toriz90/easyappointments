@@ -477,4 +477,4 @@ $config['rate_limiting'] = TRUE;
 
 /* End of file config.php */
 /* Location: ./application/config/config.php */
-$config['base_url'] = 'https://citas.honeywhale.com.mx';
+$config['base_url'] = rtrim(Config::BASE_URL, '/');

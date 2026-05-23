@@ -5,3 +5,5 @@ vendor/
 node_modules/
 build/
 *.zip
+RESUMEN_TECNICO.md
+docker/mysql/
