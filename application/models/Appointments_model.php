@@ -223,11 +223,18 @@ class Appointments_model extends EA_Model
     /**
      * Insert a new appointment into the database.
      *
-     * Real bookings receive a per-service folio (format `CS{CODE}-{NNNNN}`) generated inside a
-     * transaction that takes a row-level lock on the corresponding `ea_services` row, so two
-     * concurrent bookings of the same service cannot read the same MAX(seq) and end up with a
-     * duplicate folio. Unavailability blocks and rows missing `id_services` are inserted
-     * without a folio.
+     * Real bookings receive a folio in the format `CS{CODE}-{NNNNN}`, where CODE is derived
+     * from `id_services` (see SERVICE_FOLIO_CODES) and NNNNN is the next sequence value for
+     * that CODE. The sequence is counted across ALL appointments whose folio starts with
+     * that prefix — independently of the appointment's current `id_services` — so that an
+     * appointment which was later reassigned to a different service does not create gaps in
+     * the counter nor produce duplicates that would clash with the UNIQUE index.
+     *
+     * Generation runs inside a transaction that takes a row-level lock on the corresponding
+     * `ea_services` row, which serializes concurrent bookings of the same service. The
+     * `appointments_folio_unique` index acts as the last-resort guard for any remaining edge
+     * case (e.g. two services that share the same CODE booked concurrently). Unavailability
+     * blocks and rows missing `id_services` are inserted without a folio.
      *
      * @param array $appointment Associative array with the appointment data.
      *
@@ -267,10 +274,14 @@ class Appointments_model extends EA_Model
         $prefix = 'CS' . self::folio_code_for_service($id_services) . '-';
         $substr_start = strlen($prefix) + 1;
 
+        // Filter by the folio prefix only — NOT by id_services. A folio belongs to a CODE for
+        // its entire lifetime, even if the appointment is later reassigned to a service with
+        // a different code. Filtering by id_services here would miss those rows and the MAX
+        // would come back too low, regenerating a folio that already exists and crashing on
+        // the UNIQUE index.
         $row = $this->db
             ->select('MAX(CAST(SUBSTRING(folio, ' . (int) $substr_start . ') AS UNSIGNED)) AS last_seq', false)
             ->from('appointments')
-            ->where('id_services', $id_services)
             ->where('folio IS NOT NULL', null, false)
             ->like('folio', $prefix, 'after')
             ->get()

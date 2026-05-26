@@ -564,6 +564,10 @@ App.Components.AppointmentsModal = (function () {
         $appointmentsModal.find('.modal-message').addClass('.d-none');
         $appointmentsModal.find('.is-invalid').removeClass('is-invalid');
 
+        // Hide the PDF download button by default. It is re-enabled below only when the
+        // modal is opened in edit mode (see calendar_default_view.js / calendar_table_view.js).
+        $appointmentsModal.find('#download-appointment-pdf').addClass('d-none').attr('href', '#');
+
         const defaultStatusValue = $appointmentStatus.find('option:first').val();
         $appointmentStatus.val(defaultStatusValue);
 

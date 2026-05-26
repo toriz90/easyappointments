@@ -182,7 +182,17 @@ App.Http.Booking = (function () {
 
         const url = App.Utils.Url.siteUrl('booking/register');
 
-        const $layer = $('<div/>');
+        const $layer = $('<div/>', {
+            'id': 'booking-confirmation-overlay',
+            'html':
+                '<div class="text-center">' +
+                    '<div class="spinner-border text-light mb-3" role="status" ' +
+                        'style="width: 3.5rem; height: 3.5rem; border-width: 0.35rem;">' +
+                        '<span class="visually-hidden">Confirmando…</span>' +
+                    '</div>' +
+                    '<div class="text-light h5 mb-0">Confirmando tu cita…</div>' +
+                '</div>',
+        });
 
         $.ajax({
             url: url,
@@ -191,18 +201,23 @@ App.Http.Booking = (function () {
             dataType: 'json',
             beforeSend: () => {
                 $layer.appendTo('body').css({
-                    background: 'white',
+                    background: 'rgba(0, 0, 0, 0.6)',
                     position: 'fixed',
                     top: '0',
                     left: '0',
                     height: '100vh',
                     width: '100vw',
-                    opacity: '0.5',
+                    display: 'flex',
+                    'align-items': 'center',
+                    'justify-content': 'center',
+                    'z-index': '9999',
                 });
             },
         })
             .done((response) => {
                 if (response.captcha_verification === false) {
+                    $layer.remove();
+
                     $captchaHint.text(lang('captcha_is_wrong')).fadeTo(400, 1);
 
                     setTimeout(() => {
@@ -217,8 +232,13 @@ App.Http.Booking = (function () {
                 }
 
                 if (response.appointment_hash) {
+                    // Keep the overlay visible through the redirect so the customer never sees
+                    // a blank page between this AJAX completing and the confirmation page
+                    // finishing its own load.
                     window.location.href = App.Utils.Url.siteUrl('booking_confirmation/of/' + response.appointment_hash);
                 } else {
+                    $layer.remove();
+
                     // Unexpected response without hash (e.g. success:false from server)
                     const errorMsg = response.message || 'Error al registrar la cita. Por favor intente de nuevo.';
                     const $errorDiv = $('#booking-error-message');
@@ -231,6 +251,8 @@ App.Http.Booking = (function () {
                 }
             })
             .fail((jqXHR) => {
+                $layer.remove();
+
                 $captchaTitle.find('button').trigger('click');
 
                 let errorMessage = 'Ocurrió un error al registrar la cita. Por favor intente de nuevo.';
@@ -249,9 +271,6 @@ App.Http.Booking = (function () {
                 } else {
                     alert(errorMessage);
                 }
-            })
-            .always(() => {
-                $layer.remove();
             });
     }
 

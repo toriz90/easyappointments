@@ -19,15 +19,23 @@
         </small>
     </p>
 
-    <a href="<?= site_url() ?>" class="btn btn-primary btn-large">
-        <i class="fas fa-calendar-alt me-2"></i>
-        <?= lang('go_to_booking_page') ?>
-    </a>
+    <div class="d-flex flex-column flex-md-row justify-content-center align-items-stretch align-items-md-center flex-wrap gap-2">
+        <a href="<?= site_url() ?>" class="btn btn-primary">
+            <i class="fas fa-calendar-alt me-2"></i>
+            <?= lang('go_to_booking_page') ?>
+        </a>
 
-    <a href="<?= vars('add_to_google_url') ?>" id="add-to-google-calendar" class="btn btn-primary" target="_blank">
-        <i class="fas fa-plus me-2"></i>
-        <?= lang('add_to_google_calendar') ?>
-    </a>
+        <a href="<?= vars('add_to_google_url') ?>" id="add-to-google-calendar" class="btn btn-primary" target="_blank">
+            <i class="fas fa-plus me-2"></i>
+            <?= lang('add_to_google_calendar') ?>
+        </a>
+
+        <a href="<?= site_url('confirmation_pdf/download/' . vars('appointment_hash')) ?>"
+           id="download-confirmation-pdf" class="btn btn-primary" target="_blank">
+            <i class="fas fa-file-pdf me-2"></i>
+            Descargar PDF de confirmación
+        </a>
+    </div>
 </div>
 
 <?php end_section('content'); ?>

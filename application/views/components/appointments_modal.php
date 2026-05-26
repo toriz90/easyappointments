@@ -363,6 +363,12 @@
             <div class="modal-footer">
                 <?php slot('before_appointment_actions'); ?>
 
+                <a id="download-appointment-pdf" class="btn btn-outline-secondary me-auto d-none"
+                   href="#" target="_blank" rel="noopener">
+                    <i class="fas fa-file-pdf me-2"></i>
+                    Descargar PDF
+                </a>
+
                 <button class="btn btn-secondary" data-bs-dismiss="modal">
                     <?= lang('cancel') ?>
                 </button>

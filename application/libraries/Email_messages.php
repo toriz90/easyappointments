@@ -46,6 +46,7 @@ class Email_messages
         $this->CI->load->library('email');
         $this->CI->load->library('ics_file');
         $this->CI->load->library('timezones');
+        $this->CI->load->library('appointment_confirmation_pdf');
     }
 
     /**
@@ -119,6 +120,30 @@ class Email_messages
         $php_mailer = $this->get_php_mailer($recipient_email, $subject, $html);
 
         $php_mailer->addStringAttachment($ics_stream, 'invitation.ics', PHPMailer::ENCODING_BASE64, 'text/calendar');
+
+        // Attach the confirmation PDF. Used both when the appointment is first booked and when
+        // it is rescheduled/edited; the cancellation email (send_appointment_deleted) intentionally
+        // does not include it. A failure here should not prevent the notification from being sent.
+        try {
+            $pdf_bytes = $this->CI->appointment_confirmation_pdf->generate((int) $appointment['id']);
+
+            $pdf_filename = !empty($appointment['folio'])
+                ? 'Confirmacion-' . $appointment['folio'] . '.pdf'
+                : 'Confirmacion-cita-' . (int) $appointment['id'] . '.pdf';
+
+            $php_mailer->addStringAttachment(
+                $pdf_bytes,
+                $pdf_filename,
+                PHPMailer::ENCODING_BASE64,
+                'application/pdf',
+            );
+        } catch (Throwable $e) {
+            log_message(
+                'error',
+                'Confirmation PDF could not be attached to email for appointment '
+                . ($appointment['id'] ?? '?') . ': ' . $e->getMessage(),
+            );
+        }
 
         $php_mailer->send();
     }

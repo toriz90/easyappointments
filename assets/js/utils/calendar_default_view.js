@@ -138,6 +138,10 @@ App.Utils.CalendarDefaultView = (function () {
                 // Apply appointment data and show modal dialog.
                 $appointmentsModal.find('.modal-header h3').text(lang('edit_appointment_title'));
                 $appointmentsModal.find('#appointment-id').val(appointment.id);
+                $appointmentsModal
+                    .find('#download-appointment-pdf')
+                    .attr('href', App.Utils.Url.siteUrl('confirmation_pdf/admin/' + appointment.id))
+                    .removeClass('d-none');
                 $appointmentsModal.find('#select-service').val(appointment.id_services).trigger('change');
                 $appointmentsModal.find('#select-provider').val(appointment.id_users_provider);
 
@@ -1615,6 +1619,10 @@ App.Utils.CalendarDefaultView = (function () {
 
             $appointmentsModal.find('.modal-header h3').text(lang('edit_appointment_title'));
             $appointmentsModal.find('#appointment-id').val(appointment.id);
+            $appointmentsModal
+                .find('#download-appointment-pdf')
+                .attr('href', App.Utils.Url.siteUrl('confirmation_pdf/admin/' + appointment.id))
+                .removeClass('d-none');
             $appointmentsModal.find('#select-service').val(appointment.id_services).trigger('change');
             $appointmentsModal.find('#select-provider').val(appointment.id_users_provider);
 

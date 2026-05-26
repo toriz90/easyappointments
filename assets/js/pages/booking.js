@@ -1030,6 +1030,13 @@ App.Pages.Booking = (function () {
             $selectService.val(appointment.id_services).trigger('change');
             $selectProvider.val(appointment.id_users_provider);
 
+            // In reschedule mode the customer can only change date and time. The folio
+            // (CSXXX-NNNNN) encodes the service center and must remain consistent, so the
+            // service and provider selects are locked to their original values. The backend
+            // re-validates this in Booking::register() in case the form is tampered with.
+            $selectService.prop('disabled', true);
+            $selectProvider.prop('disabled', true);
+
             // Set Appointment Date
             const startMoment = moment(appointment.start_datetime);
             App.Utils.UI.setDateTimePickerValue($selectDate, startMoment.toDate());

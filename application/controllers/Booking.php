@@ -435,6 +435,31 @@ class Booking extends EA_Controller
                 $customer['phone_number'] = '';
             }
 
+            // In manage (reschedule) mode the customer is only allowed to change date and time.
+            // The folio (CSXXX-NNNNN) codifies the service center and must remain consistent with
+            // the appointment, so any submitted id_services / id_users_provider must match the
+            // original record. This is a server-side guard against tampering with the form data.
+            if ($manage_mode && !empty($appointment['id'])) {
+                try {
+                    $original_appointment = $this->appointments_model->find((int) $appointment['id']);
+                } catch (Throwable $e) {
+                    throw new RuntimeException(lang('appointment_does_not_exist_in_db'));
+                }
+
+                if ((int) ($appointment['id_services'] ?? 0) !== (int) $original_appointment['id_services']) {
+                    throw new RuntimeException('No es posible cambiar el centro de servicio al reagendar.');
+                }
+
+                $submitted_provider = $appointment['id_users_provider'] ?? null;
+
+                if (
+                    $submitted_provider !== null
+                    && (string) $submitted_provider !== (string) $original_appointment['id_users_provider']
+                ) {
+                    throw new RuntimeException('No es posible cambiar el proveedor al reagendar.');
+                }
+            }
+
             // Check appointment availability before registering it to the database.
             $appointment['id_users_provider'] = $this->check_datetime_availability();
 
@@ -562,28 +587,104 @@ class Booking extends EA_Controller
                 'time_format' => setting('time_format'),
             ];
 
-            $this->synchronization->sync_appointment_saved($appointment, $service, $provider, $customer, $settings);
-
-            $this->notifications->notify_appointment_saved(
-                $appointment,
-                $service,
-                $provider,
-                $customer,
-                $settings,
-                $manage_mode,
-            );
-
-            $this->webhooks_client->trigger(WEBHOOK_APPOINTMENT_SAVE, $appointment);
-
             $response = [
                 'appointment_id' => $appointment['id'],
                 'appointment_hash' => $appointment['hash'],
             ];
 
+            // Send the success response to the customer immediately, BEFORE running the slow
+            // post-save tasks (calendar sync, email with PDF generation via dompdf, webhooks).
+            // dompdf alone can take several seconds; deferring keeps the booking wizard
+            // responsive — the customer sees the confirmation page right away while the email
+            // and external integrations happen in the background.
             json_response($response);
+
+            $this->finish_response_and_continue();
+
+            try {
+                $this->synchronization->sync_appointment_saved($appointment, $service, $provider, $customer, $settings);
+
+                $this->notifications->notify_appointment_saved(
+                    $appointment,
+                    $service,
+                    $provider,
+                    $customer,
+                    $settings,
+                    $manage_mode,
+                );
+
+                $this->webhooks_client->trigger(WEBHOOK_APPOINTMENT_SAVE, $appointment);
+            } catch (Throwable $e) {
+                // The client already got the success response; we can only log here.
+                log_message(
+                    'error',
+                    'Post-save background work failed for appointment ' . ($appointment['id'] ?? '?')
+                    . ': ' . $e->getMessage(),
+                );
+            }
         } catch (Throwable $e) {
             json_exception($e);
         }
+    }
+
+    /**
+     * Flush the current response to the client and detach the PHP process so the background
+     * work (email + PDF generation + sync + webhooks) does not keep the browser waiting.
+     *
+     * CRITICAL: `session_write_close()` is called BEFORE `fastcgi_finish_request()`. PHP
+     * serializes requests that share a session id by holding a lock on the session file
+     * until the script ends OR until `session_write_close()` runs. Without releasing it
+     * here, the customer's browser immediately requests `/booking_confirmation/of/{hash}`,
+     * tries to open the same session, and stalls waiting for the lock — defeating the
+     * whole point of fastcgi_finish_request. (That explained the ~6 second wait we were
+     * seeing on the redirect even though the POST itself returned fast.)
+     *
+     * The remaining steps:
+     *  - `set_time_limit(0)` / `ignore_user_abort(true)` so the slow background tasks
+     *    (dompdf, SMTP, Google Calendar sync — which may itself wait on network timeouts
+     *    if the API is unreachable) are not killed by `max_execution_time` or by the
+     *    client disconnecting after the redirect.
+     *  - `fastcgi_finish_request()` under PHP-FPM (production) closes the FastCGI socket
+     *    with nginx so the client gets the response immediately.
+     *  - `litespeed_finish_request()` is the equivalent under LiteSpeed.
+     *  - Fallback for cli-server / mod_php: flush all output buffers manually. The client
+     *    still gets the body, but the connection may stay open until the script ends —
+     *    acceptable outside production.
+     */
+    private function finish_response_and_continue(): void
+    {
+        // 1. Emit the buffered response body to the client.
+        $this->output->_display();
+
+        // 2. Release the session lock so the redirect request does not block on it.
+        if (function_exists('session_write_close')) {
+            @session_write_close();
+        }
+
+        // 3. Don't let max_execution_time or a client disconnect interrupt background work.
+        @set_time_limit(0);
+        ignore_user_abort(true);
+
+        // 4. Close the socket with the front-end (nginx / LiteSpeed).
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+            return;
+        }
+
+        if (function_exists('litespeed_finish_request')) {
+            litespeed_finish_request();
+            return;
+        }
+
+        // Fallback (dev `php -S`, mod_php): flush manually.
+        while (ob_get_level() > 0) {
+            @ob_end_flush();
+        }
+
+        @flush();
+
+        // Prevent CodeIgniter from re-emitting the buffered output at the end of the request.
+        $this->output->set_output('');
     }
 
     /**
