@@ -1,25 +1,45 @@
 <?php extend('layouts/message_layout'); ?>
 
+<?php section('styles'); ?>
+<style>
+    /* Confirmación de cita — compactar en móvil sin perder respiración en desktop. */
+    #booking-confirmation-content #success-icon {
+        max-width: 90px;
+        height: auto;
+    }
+    #booking-confirmation-content .confirmation-buttons .btn {
+        white-space: normal; /* botones con texto largo no deben overflow */
+    }
+    @media (min-width: 768px) {
+        #booking-confirmation-content #success-icon {
+            max-width: 120px;
+        }
+    }
+</style>
+<?php end_section('styles'); ?>
+
 <?php section('content'); ?>
 
-<div>
-    <img id="success-icon" class="mt-0 mb-5" src="<?= base_url('assets/img/success.png') ?>" alt="success"/>
-</div>
+<div id="booking-confirmation-content" class="text-center px-2 px-md-0">
 
-<div class="mb-5">
-    <h4 class="mb-5"><?= lang('appointment_registered') ?></h4>
+    <img id="success-icon"
+         class="img-fluid mt-2 mt-md-0 mb-3 mb-md-4"
+         src="<?= base_url('assets/img/success.png') ?>"
+         alt="success"/>
 
-    <p>
+    <h4 class="mb-3"><?= lang('appointment_registered') ?></h4>
+
+    <p class="mb-2">
         <?= lang('appointment_details_was_sent_to_you') ?>
     </p>
 
-    <p class="mb-5 text-muted">
+    <p class="mb-4 text-muted">
         <small>
             <?= lang('check_spam_folder') ?>
         </small>
     </p>
 
-    <div class="d-flex flex-column flex-md-row justify-content-center align-items-stretch align-items-md-center flex-wrap gap-2">
+    <div class="confirmation-buttons d-flex flex-column flex-md-row justify-content-center align-items-stretch align-items-md-center flex-wrap gap-2 mb-3">
         <a href="<?= site_url() ?>" class="btn btn-primary">
             <i class="fas fa-calendar-alt me-2"></i>
             <?= lang('go_to_booking_page') ?>
@@ -36,6 +56,7 @@
             Descargar PDF de confirmación
         </a>
     </div>
+
 </div>
 
 <?php end_section('content'); ?>

@@ -42,6 +42,15 @@
                 </a>
             </li>
 
+            <?php $hidden = can('view', PRIV_APPOINTMENTS) ? '' : 'd-none'; ?>
+            <?php $active = $active_menu == 'appointments_management' ? 'active' : ''; ?>
+            <li class="nav-item <?= $active . ' ' . $hidden ?>">
+                <a href="<?= site_url('appointments_management') ?>" class="nav-link">
+                    <i class="fas fa-list-ul me-2"></i>
+                    <?= lang('appointments_management') ?>
+                </a>
+            </li>
+
             <?php $hidden = can('view', PRIV_CUSTOMERS) ? '' : 'd-none'; ?>
             <?php $active = $active_menu == PRIV_CUSTOMERS ? 'active' : ''; ?>
             <li class="nav-item <?= $active . $hidden ?>">

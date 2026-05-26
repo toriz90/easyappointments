@@ -57,6 +57,7 @@ $lang['appointment_not_found'] = 'No se encontró la cita';
 $lang['appointment_does_not_exist_in_db'] = 'La cita que usted busca ya no se encuentra en la base de datos del sistema.';
 $lang['display_calendar'] = 'Mostrar Calendario';
 $lang['calendar'] = 'Calendario';
+$lang['appointments_management'] = 'Gestión de citas';
 $lang['users'] = 'Usuarios';
 $lang['settings'] = 'Configuración';
 $lang['log_out'] = 'Cerrar sesión';
