@@ -43,7 +43,10 @@ App.Pages.Login = (function () {
         App.Http.Login.validate(username, password)
             .done((response) => {
                 if (response.success) {
-                    window.location.href = vars('dest_url');
+                    // Prefer the server-computed dest_url (it knows the user's role
+                    // and PRIV_APPOINTMENTS access); fall back to the page-load value
+                    // for safety if older deploys do not return it.
+                    window.location.href = response.dest_url || vars('dest_url');
                 } else {
                     $alert.text(lang('login_failed'));
                     $alert.removeClass('d-none alert-danger alert-success').addClass('alert-danger');

@@ -1,0 +1,228 @@
+/* ----------------------------------------------------------------------------
+ * Easy!Appointments - Honey Whale brand overrides (Fase 2)
+ *
+ * Acentos especificos de marca aplicados al booking publico y al admin.
+ * Este partial DEBE importarse DESPUES de bootstrap y DESPUES de los estilos
+ * legacy de booking_layout.css / backend_layout.css para ganar especificidad
+ * por orden de fuente. Las reglas usan selectores con la misma especificidad
+ * que las hardcoded (p.ej. #book-appointment-wizard #header).
+ *
+ * Tokens (consistentes con _honeywhale-brand.scss):
+ *   primary  = #1F2A37   brand    = #F5B301   body-bg = #F4F5F7
+ *   on-brand = #3D2C00   border   = #E2E5E9
+ * ---------------------------------------------------------------------------- */
+
+$hw-primary:        #1F2A37;
+$hw-primary-soft:   #9AA3AF; // tagline / texto secundario sobre dark
+$hw-brand:          #F5B301;
+$hw-on-brand:       #3D2C00; // texto sobre dorado para contraste AA
+$hw-success:        #1E8E5A;
+$hw-success-soft:   #E8F4ED;
+$hw-body-bg:        #F4F5F7;
+$hw-border:         #E2E5E9;
+$hw-muted:          #6B7280;
+$hw-disabled:       #C9CDD3;
+
+/* === BOOKING PUBLICO ====================================================== */
+
+/* Header oscuro con tagline gris claro */
+#book-appointment-wizard #header {
+    background: $hw-primary;
+}
+
+#book-appointment-wizard #company-name {
+    color: #fff;
+
+    .display-booking-selection {
+        color: $hw-primary-soft;
+        border-right-color: $hw-primary-soft !important;
+    }
+}
+
+/* Pasos numerados: pendiente / activo / completado */
+#book-appointment-wizard .book-step {
+    background: $hw-body-bg;
+    border: 0.5px solid $hw-border;
+    transition: all 0.2s ease;
+
+    strong {
+        color: $hw-muted;
+    }
+}
+
+#book-appointment-wizard .book-step.active-step {
+    background: $hw-brand;
+    border-color: $hw-brand;
+
+    strong {
+        color: $hw-on-brand;
+        font-weight: 500;
+    }
+}
+
+#book-appointment-wizard .book-step.completed-step {
+    background: $hw-success-soft;
+    border-color: $hw-success-soft;
+
+    strong {
+        // Reemplazamos el numero con un check sin tocar markup. Usamos
+        // Unicode U+2713 porque el proyecto carga Font Awesome via JS
+        // (no via CSS font), asi que \f00c no estaria disponible aqui.
+        color: transparent;
+        position: relative;
+
+        &::after {
+            content: '\2713';
+            color: $hw-success;
+            font-weight: 700;
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+}
+
+/* Tarjeta de servicio paso 1: el <select> es la "tarjeta"; gana border dorado
+   cuando tiene un valor seleccionado (no la opcion placeholder vacia).
+   Usamos :has() para detectar la <option> activa no-placeholder. Soportado en
+   Chrome 105+ / Safari 15.4+ / Firefox 121+. */
+#book-appointment-wizard #wizard-frame-1 #select-service:has(option:checked:not([value=''])) {
+    border: 2px solid $hw-brand;
+}
+
+/* Flatpickr en booking: dia seleccionado dorado, dia actual con outline oscuro */
+.flatpickr-calendar {
+    .flatpickr-day.selected,
+    .flatpickr-day.selected.inRange,
+    .flatpickr-day.selected:focus,
+    .flatpickr-day.selected:hover,
+    .flatpickr-day.startRange,
+    .flatpickr-day.endRange {
+        background: $hw-brand;
+        border-color: $hw-brand;
+        color: $hw-on-brand;
+        font-weight: 500;
+    }
+
+    .flatpickr-day.today:not(.selected) {
+        border: 0.5px solid $hw-primary;
+        background: transparent;
+        color: $hw-primary;
+    }
+
+    .flatpickr-months,
+    .flatpickr-months .flatpickr-month,
+    .flatpickr-weekdays,
+    .flatpickr-current-month .flatpickr-monthDropdown-months,
+    span.flatpickr-weekday {
+        background: $hw-primary;
+        color: #fff;
+    }
+}
+
+/* Slots de hora: disponible / seleccionado / ocupado (estilo listo aunque el
+   JS actual no inyecta .unavailable-hour todavia). */
+#book-appointment-wizard #available-hours .available-hour {
+    background: #fff;
+    border: 1px solid $hw-border;
+    color: $hw-primary;
+
+    &:hover {
+        border-color: $hw-primary;
+        background: $hw-body-bg;
+    }
+}
+
+#book-appointment-wizard #available-hours .selected-hour,
+#book-appointment-wizard #available-hours .selected-hour:hover {
+    background: $hw-brand;
+    border-color: $hw-brand;
+    color: $hw-on-brand;
+    font-weight: 500;
+}
+
+#book-appointment-wizard #available-hours .unavailable-hour {
+    background: $hw-body-bg;
+    color: $hw-disabled;
+    border-color: $hw-border;
+    text-decoration: line-through;
+    pointer-events: none;
+}
+
+/* Footer del booking: franja blanca con border dorado */
+#book-appointment-wizard #frame-footer {
+    background: #fff;
+    border-top: 3px solid $hw-brand;
+    color: $hw-muted;
+
+    .footer-brand {
+        color: $hw-primary;
+        font-weight: 600;
+    }
+}
+
+/* === ADMIN ================================================================ */
+
+/* Navbar superior: bg oscuro consistente con el header del booking */
+#header {
+    background-color: $hw-primary;
+}
+
+#header .nav-link {
+    color: #fff;
+}
+
+#header #header-menu .nav-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Item activo en dorado */
+#header #header-menu .nav-item.active {
+    background: $hw-brand;
+}
+
+#header #header-menu .nav-item.active .nav-link {
+    color: $hw-on-brand;
+    font-weight: 500;
+}
+
+#header #header-logo small {
+    color: $hw-primary-soft;
+}
+
+/* Footer admin: misma franja dorada que el booking */
+#footer {
+    background-color: #fff;
+    border-top: 3px solid $hw-brand;
+}
+
+/* Modal headers (calendario: 'Anadir evento', 'Editar cita', etc.). Iban en
+   verde #429a82 desde backend_layout.scss; unificamos a primary oscuro.
+   El btn-close de Bootstrap 5 usa un SVG enmascarado negro, asi que lo
+   invertimos via filter para que se vea sobre fondo dark. */
+body .modal-header {
+    background: $hw-primary;
+    border-bottom: 0;
+}
+
+body .modal-header h3,
+body .modal-header .modal-title {
+    color: #fff;
+}
+
+body .modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+    opacity: 0.75;
+
+    &:hover,
+    &:focus {
+        opacity: 1;
+    }
+}
+
+body .modal-header .close {
+    color: #fff;
+    opacity: 0.75;
+}

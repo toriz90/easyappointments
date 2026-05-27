@@ -88,8 +88,27 @@ class Login extends EA_Controller
 
             session($user_data); // Save data in the session.
 
+            // Post-login destination. A `dest_url` was stored in the session when an
+            // unauthenticated user was redirected away from a protected page; honor it
+            // so deep-links survive the login round-trip. When the only `dest_url` is
+            // the generic fallback set in the constructor (site_url('calendar')), pick
+            // a sensible default per role: users with PRIV_APPOINTMENTS land on the
+            // management list (the primary daily workflow), everyone else keeps the
+            // calendar fallback.
+            $default_url = site_url('calendar');
+            $session_url = session('dest_url');
+
+            if (!empty($session_url) && $session_url !== $default_url) {
+                $dest_url = $session_url;
+            } elseif (can('view', PRIV_APPOINTMENTS)) {
+                $dest_url = site_url('appointments_management');
+            } else {
+                $dest_url = $default_url;
+            }
+
             json_response([
                 'success' => true,
+                'dest_url' => $dest_url,
             ]);
         } catch (Throwable $e) {
             json_exception($e);

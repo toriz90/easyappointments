@@ -18,6 +18,9 @@
  *    values (Booked / Confirmed / Rescheduled / Cancelled / Draft).
  *  - Unavailability blocks (is_unavailability = 1) are left untouched — they don't carry a
  *    meaningful status.
+ *  - Legacy cancellations ('Cancelled', 'Canceled') are preserved as 'Cancelada' BEFORE
+ *    the generic backfill runs; otherwise the broad UPDATE would silently lose the
+ *    cancellation history by mapping everything not in the Spanish set to 'Confirmada'.
  *  - The configurable `appointment_status_options` setting is updated so the appointment
  *    modal and the new management list use the Spanish values.
  */
@@ -33,7 +36,19 @@ class Migration_Update_appointment_status_to_spanish extends EA_Migration
                 "ALTER TABLE {$appointments} MODIFY COLUMN status VARCHAR(512) NOT NULL DEFAULT 'Confirmada'"
             );
 
-            // Backfill existing real bookings.
+            // FIRST: preserve legacy cancellations. Anything stored as 'Cancelled' /
+            // 'Canceled' under the old upstream taxonomy is a real cancellation and
+            // must survive the migration as 'Cancelada'. This MUST run before the
+            // generic backfill below; otherwise the broad UPDATE would rewrite these
+            // rows to 'Confirmada' and the cancellation history would be lost.
+            $this->db->query(
+                "UPDATE {$appointments} "
+                . "SET status = 'Cancelada' "
+                . "WHERE is_unavailability = 0 "
+                . "AND status IN ('Cancelled','Canceled')"
+            );
+
+            // Backfill remaining real bookings with non-Spanish or empty statuses.
             $this->db->query(
                 "UPDATE {$appointments} "
                 . "SET status = 'Confirmada' "

@@ -463,8 +463,10 @@ App.Pages.Booking = (function () {
                 .parents()
                 .eq(1)
                 .fadeOut(() => {
-                    $('.active-step').removeClass('active-step');
-                    $('#step-' + nextTabIndex).addClass('active-step');
+                    $('.active-step').removeClass('active-step').addClass('completed-step');
+                    $('#step-' + nextTabIndex)
+                        .removeClass('completed-step')
+                        .addClass('active-step');
                     $('#wizard-frame-' + nextTabIndex).fadeIn();
                 });
 
@@ -489,7 +491,9 @@ App.Pages.Booking = (function () {
                 .eq(1)
                 .fadeOut(() => {
                     $('.active-step').removeClass('active-step');
-                    $('#step-' + prevTabIndex).addClass('active-step');
+                    $('#step-' + prevTabIndex)
+                        .removeClass('completed-step')
+                        .addClass('active-step');
                     $('#wizard-frame-' + prevTabIndex).fadeIn();
                 });
         });

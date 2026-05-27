@@ -1,0 +1,41 @@
+/* ----------------------------------------------------------------------------
+ * Easy!Appointments - Honey Whale brand palette (Fase 1)
+ *
+ * Override de variables base de Bootstrap. Este partial DEBE importarse antes
+ * que node_modules/bootstrap/scss/bootstrap; en SASS las variables se resuelven
+ * en orden de declaracion, asi que los valores definidos aqui ganan frente a
+ * los `!default` de Bootstrap y de los temas Bootswatch.
+ * ---------------------------------------------------------------------------- */
+
+// Colores de marca
+$primary:      #1F2A37;
+$secondary:    #6B7280;
+$success:      #1E8E5A;
+$danger:       #D64545;
+$warning:      #E08600;
+$info:         #2D7FB8;
+
+// Cuerpo y layout
+$body-bg:      #F4F5F7;
+$body-color:   #1F2A37;
+$border-color: #E2E5E9;
+
+// Acento dorado de Honey Whale. La Fase 2 lo usa para header, footer y
+// estados seleccionados via las utilities .btn-brand / .text-brand / .bg-brand
+// que se generan al extender $theme-colors mas abajo.
+$brand: #F5B301;
+
+// Extender el mapa $theme-colors de Bootstrap para exponer "brand" como
+// utility class. Mantenemos light/dark con sus defaults de Bootstrap para no
+// alterar componentes que esperan esos tonos (navbars light, badges, etc.).
+$theme-colors: (
+    'primary':   $primary,
+    'secondary': $secondary,
+    'success':   $success,
+    'info':      $info,
+    'warning':   $warning,
+    'danger':    $danger,
+    'light':     #f8f9fa,
+    'dark':      #343a40,
+    'brand':     $brand,
+);

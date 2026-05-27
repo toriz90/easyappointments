@@ -14,6 +14,13 @@
 
 $theme: 'lux' !default;
 
+// Honey Whale brand override (Fase 1).
+// Debe ir ANTES de las variables Bootswatch y del import de Bootstrap: define
+// $primary, $secondary, $body-bg, etc. sin !default, asi que cualquier
+// declaracion posterior con !default queda como no-op para esas variables.
+// Tambien inyecta el color de marca "brand" en $theme-colors.
+@import 'honeywhale-brand';
+
 //
 // Color system
 //

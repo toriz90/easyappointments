@@ -7,7 +7,11 @@
 ?>
 
 <div id="frame-footer">
-    <small class="d-flex justify-content-end align-items-center w-100">
+    <small class="d-flex justify-content-between align-items-center w-100">
+        <span class="footer-powered-by">
+            <span class="footer-brand"><?= e(setting('company_name') ?: 'Honey Whale') ?></span>
+        </span>
+
         <span class="footer-options">
             <span id="select-language" class="badge bg-secondary">
                 <i class="fas fa-language me-2"></i>
