@@ -75,6 +75,19 @@ App.Pages.BusinessSettings = (function () {
             });
         });
 
+        // Keep `book_advance_timeout` (minutes) synchronized with `minimum_advance_booking`
+        // (days). Both settings represent the same business rule from the admin's point of
+        // view; the input is exposed as days, the backend (Availability + Booking reschedule
+        // guard) reads minutes. The minutes value is derived here so the admin cannot leave
+        // the two out of sync.
+        const minimumAdvanceBookingDays =
+            parseInt(businessSettings.find((s) => s.name === 'minimum_advance_booking')?.value, 10) || 0;
+
+        businessSettings.push({
+            name: 'book_advance_timeout',
+            value: String(minimumAdvanceBookingDays * 1440),
+        });
+
         const workingPlan = workingPlanManager.get();
 
         businessSettings.push({

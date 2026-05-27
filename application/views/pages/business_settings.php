@@ -90,23 +90,6 @@
                             </div>
                         <?php endif; ?>
 
-                        <h5 class="text-black-50 mb-3 fw-light"><?= lang(
-                            'allow_rescheduling_cancellation_before',
-                        ) ?></h5>
-
-                        <div class="mb-5">
-                            <label for="book-advance-timeout" class="form-label">
-                                <?= lang('timeout_minutes') ?>
-                            </label>
-                            <input id="book-advance-timeout" data-field="book_advance_timeout" class="form-control"
-                                   type="number" min="15">
-                            <div class="form-text text-muted">
-                                <small>
-                                    <?= lang('book_advance_timeout_hint') ?>
-                                </small>
-                            </div>
-                        </div>
-
                         <h5 class="text-black-50 mb-3 fw-light"><?= lang('future_booking_limit') ?></h5>
 
                         <div class="mb-5">
