@@ -93,49 +93,6 @@
                                     </div>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label class="form-label" for="company-color">
-                                        <?= lang('company_color') ?>
-                                    </label>
-
-                                    <input type="color" id="company-color" data-field="company_color"
-                                           class="form-control">
-
-                                    <div class="form-text text-muted">
-                                        <small>
-                                            <?= lang('company_color_hint') ?>
-                                        </small>
-                                    </div>
-
-                                    <div class="d-flex justify-content-center">
-                                        <button type="button" class="btn btn-danger btn-sm my-3"
-                                                id="reset-company-color" hidden>
-                                            <i class="fas fa-undo-alt me-2"></i>
-                                            <?= lang('reset') ?>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label" for="theme">
-                                        <?= lang('theme') ?>
-                                    </label>
-
-                                    <select id="theme" data-field="theme" class="form-select">
-                                        <?php foreach (vars('available_themes') as $available_theme): ?>
-                                            <option value="<?= $available_theme ?>">
-                                                <?= ucfirst($available_theme) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-
-                                    <div class="form-text text-muted">
-                                        <small>
-                                            <?= lang('company_color_hint') ?>
-                                        </small>
-                                    </div>
-                                </div>
-
                             </div>
                         </div>
 

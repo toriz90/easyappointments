@@ -11,8 +11,25 @@
         <h2 class="frame-title mt-md-5"><?= lang('service_and_provider') ?></h2>
 
         <div class="row frame-content">
-            <div class="col col-md-8 offset-md-2">
-                <div class="mb-3">
+            <div class="col col-md-10 offset-md-1">
+                <!--
+                  Service cards: visible UI for choosing a service. The hidden <select> below
+                  remains the canonical form control (booking.js still reads/writes it via
+                  $('#select-service').val()/trigger('change')), so the wizard's downstream
+                  logic (load providers, available hours, URL prefill, manage mode, etc.) is
+                  untouched. Cards just sync their selection into it on click.
+                -->
+                <div id="service-cards" class="booking-card-grid mb-3">
+                    <?php foreach ($available_services as $service): ?>
+                        <div class="booking-card" data-service-id="<?= (int) $service['id'] ?>"
+                             role="button" tabindex="0">
+                            <i class="fas fa-map-marker-alt booking-card-icon"></i>
+                            <div class="booking-card-name"><?= e($service['name']) ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="mb-3" hidden>
                     <label for="select-service">
                         <strong><?= lang('service') ?></strong>
                     </label>

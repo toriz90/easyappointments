@@ -226,3 +226,82 @@ body .modal-header .close {
     color: #fff;
     opacity: 0.75;
 }
+
+/* === BOOKING — Paso 1: tarjetas de servicio =============================== */
+
+#book-appointment-wizard .booking-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+#book-appointment-wizard .booking-card {
+    background: #fff;
+    border: 0.5px solid $hw-border;
+    border-radius: 10px;
+    padding: 18px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    color: $hw-primary;
+    user-select: none;
+}
+
+#book-appointment-wizard .booking-card:hover {
+    border-color: $hw-primary;
+}
+
+#book-appointment-wizard .booking-card:focus-visible {
+    outline: none;
+    border-color: $hw-primary;
+    box-shadow: 0 0 0 3px rgba(31, 42, 55, 0.15);
+}
+
+#book-appointment-wizard .booking-card.selected {
+    // 2px border instead of 0.5px adds 1.5px to box. Compensate via padding so
+    // the card does not visually jump when toggling state.
+    border: 2px solid $hw-brand;
+    padding: 16.5px 12.5px;
+}
+
+#book-appointment-wizard .booking-card.selected::after {
+    content: '\2713';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: $hw-brand;
+    color: $hw-on-brand;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 22px;
+    text-align: center;
+}
+
+#book-appointment-wizard .booking-card .booking-card-icon {
+    font-size: 22px;
+    color: $hw-muted;
+}
+
+#book-appointment-wizard .booking-card.selected .booking-card-icon {
+    color: $hw-primary;
+}
+
+#book-appointment-wizard .booking-card .booking-card-name {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.25;
+}
+
+@media (max-width: 575.98px) {
+    #book-appointment-wizard .booking-card-grid {
+        grid-template-columns: 1fr;
+    }
+}

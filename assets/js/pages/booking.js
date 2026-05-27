@@ -373,6 +373,40 @@ App.Pages.Booking = (function () {
          * When the user clicks on a service, its available providers should
          * become visible.
          */
+        // Service cards (paso 1): click on a card mirrors the selection into the hidden
+        // <select id="select-service">, which is still the canonical form control. The
+        // 'change' handler below + every downstream `$selectService.val(...)` call
+        // continue to work unchanged.
+        const $serviceCards = $('#service-cards');
+
+        function syncServiceCardsSelection() {
+            const currentId = $selectService.val();
+            $serviceCards.find('.booking-card').removeClass('selected');
+            if (currentId) {
+                $serviceCards
+                    .find('.booking-card[data-service-id="' + currentId + '"]')
+                    .addClass('selected');
+            }
+        }
+
+        $serviceCards.on('click', '.booking-card', (event) => {
+            const serviceId = String($(event.currentTarget).data('service-id'));
+            if ($selectService.val() === serviceId) return;
+            $selectService.val(serviceId).trigger('change');
+        });
+
+        // Keyboard a11y: Enter / Space selects the focused card.
+        $serviceCards.on('keydown', '.booking-card', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                $(event.currentTarget).trigger('click');
+            }
+        });
+
+        // Mirror $selectService → cards on every change (URL prefill, manage mode, the
+        // single-service auto-select, etc. all funnel through trigger('change')).
+        $selectService.on('change', syncServiceCardsSelection);
+
         $selectService.on('change', (event) => {
             const $target = $(event.target);
             const serviceId = $selectService.val();

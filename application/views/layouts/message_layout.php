@@ -27,8 +27,6 @@
     <link rel="stylesheet" type="text/css" href="<?= asset_url('assets/css/layouts/booking_layout.css') ?>">
     <link rel="stylesheet" type="text/css" href="<?= asset_url('assets/css/honeywhale-overrides.css') ?>">
 
-    <?php component('company_color_style', ['company_color' => vars('company_color')]); ?>
-
     <?php slot('styles'); ?>
 </head>
 <body>
