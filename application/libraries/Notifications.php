@@ -364,7 +364,10 @@ class Notifications
         $provider  = $this->CI->providers_model->find($appointment['id_users_provider']);
         $customer  = $this->CI->customers_model->find($appointment['id_users_customer']);
         $service   = $this->CI->services_model->find($appointment['id_services']);
-        $settings  = ['company_name' => setting('company_name')];
+        $settings  = [
+            'company_name'  => setting('company_name'),
+            'company_color' => email_company_color(),
+        ];
 
         $customer_link = site_url('booking/reschedule/' . $appointment['hash']);
         $provider_link = site_url('calendar/reschedule/' . $appointment['hash']);

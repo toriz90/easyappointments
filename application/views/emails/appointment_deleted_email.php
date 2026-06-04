@@ -20,7 +20,7 @@
 
 <div class="email-container" style="width: 650px; border: 1px solid #eee; margin: 30px auto;">
     <div id="header"
-         style="background-color: <?= $settings['company_color'] ?? '#429a82' ?>; height: 80px; padding: 15px; text-align: center;">
+         style="background-color: <?= $settings['company_color'] ?? EMAIL_FALLBACK_COMPANY_COLOR ?>; height: 80px; padding: 15px; text-align: center;">
         <?php if (!empty($settings['company_logo'])): ?>
             <?php if (strpos($settings['company_logo'], 'data:image') === 0): ?>
                 <img src="<?= $settings['company_logo'] ?>" alt="<?= e($settings['company_name']) ?>"

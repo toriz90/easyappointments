@@ -94,6 +94,11 @@ const EVENT_MINIMUM_DURATION = 5; // Minutes
 
 const DEFAULT_COMPANY_COLOR = '#ffffff';
 
+// Fallback header color for transactional emails when no brand color is set.
+// Single source of truth for email branding; never the legacy upstream teal
+// (#429a82) — always a visible, on-brand value. See email_company_color().
+const EMAIL_FALLBACK_COMPANY_COLOR = '#000000';
+
 const LDAP_DEFAULT_FILTER = '(&(objectClass=*)(|(cn={{KEYWORD}})(sn={{KEYWORD}})(mail={{KEYWORD}})(givenName={{KEYWORD}})(uid={{KEYWORD}})))';
 
 const LDAP_WHITELISTED_ATTRIBUTES = [

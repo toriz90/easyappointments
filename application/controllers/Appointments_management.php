@@ -368,13 +368,11 @@ class Appointments_management extends EA_Controller
             $provider = $this->providers_model->find((int) $appointment['id_users_provider']);
             $service = $this->services_model->find((int) $appointment['id_services']);
 
-            $company_color = setting('company_color');
             $settings = [
                 'company_name' => setting('company_name'),
                 'company_link' => setting('company_link'),
                 'company_email' => setting('company_email'),
-                'company_color' =>
-                    !empty($company_color) && $company_color != DEFAULT_COMPANY_COLOR ? $company_color : null,
+                'company_color' => email_company_color(),
                 'date_format' => setting('date_format'),
                 'time_format' => setting('time_format'),
             ];

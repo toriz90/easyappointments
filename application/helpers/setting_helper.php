@@ -74,3 +74,29 @@ if (!function_exists('setting')) {
         return $setting['value'] ?? $default;
     }
 }
+
+if (!function_exists('email_company_color')) {
+    /**
+     * Resolve the brand color to use in transactional email headers.
+     *
+     * Single source of truth for the email header background color. Reads the
+     * `company_color` setting and returns it, falling back to
+     * EMAIL_FALLBACK_COMPANY_COLOR (#000000) when the setting is empty/absent
+     * or still holds the "unset" sentinel DEFAULT_COMPANY_COLOR (#ffffff).
+     *
+     * Always returns a real, visible color — never null and never the legacy
+     * teal default (#429a82) — so every email path renders the same header.
+     *
+     * @return string Hex color string (e.g. "#000000").
+     */
+    function email_company_color(): string
+    {
+        $color = trim((string) setting('company_color'));
+
+        if ($color === '' || strcasecmp($color, DEFAULT_COMPANY_COLOR) === 0) {
+            return EMAIL_FALLBACK_COMPANY_COLOR;
+        }
+
+        return $color;
+    }
+}
