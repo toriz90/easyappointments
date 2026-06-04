@@ -111,6 +111,20 @@ App.Components.AppointmentsModal = (function () {
 
     function addEventListeners() {
         /**
+         * Event: Modal Fully Shown
+         *
+         * Reconstruct the mutual-exclusion state (Marketplace/Sucursales/Distribuidores) once the
+         * modal is fully shown. The edit handlers populate the selects before calling modal('show'),
+         * but the values are only reliably readable after the show transition completes, so running
+         * this synchronously at open time would miss them. Centralizing it here keeps both calendar
+         * views (default + table) aligned. addEventListeners() runs once on DOMContentLoaded, so this
+         * binding is registered a single time and does not accumulate across open/close cycles.
+         */
+        $appointmentsModal.on('shown.bs.modal', () => {
+            App.Components.AppointmentsModal.applyMutualExclusionOnLoad();
+        });
+
+        /**
          * Event: Mutual exclusion for Marketplace, Sucursales, Distribuidores
          */
         $(document).on('change', '#appointments-modal .custom-field-input', function () {

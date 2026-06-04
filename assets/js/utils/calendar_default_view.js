@@ -186,14 +186,13 @@ App.Utils.CalendarDefaultView = (function () {
                         }
                     });
                 }
-                // Always reconstruct the mutual-exclusion state from the populated selects,
-                // independently of whether appointment.custom_fields arrived in the payload.
-                // Matches the booking form, which also calls this unconditionally on load.
-                // Follow-up: exclusive fields with a DB id > 5 are NOT covered by the legacy
-                // block, so if custom_fields is missing they would not be populated and the
-                // exclusion could not detect them. Proper fix is to make the endpoint return
-                // custom_fields (separate backend task).
-                App.Components.AppointmentsModal.applyMutualExclusionOnLoad();
+                // Mutual-exclusion state (Marketplace/Sucursales/Distribuidores) is reconstructed
+                // centrally on the modal's 'shown.bs.modal' event (appointments_modal.js), once the
+                // selects are fully populated and rendered.
+                // Follow-up: exclusive fields with a DB id > 5 are NOT covered by the legacy block,
+                // so if custom_fields is missing they would not be populated and the exclusion could
+                // not detect them. Proper fix is to make the endpoint return custom_fields
+                // (separate backend task).
 
                 App.Components.ColorSelection.setColor(
                     $appointmentsModal.find('#appointment-color'),
