@@ -52,6 +52,11 @@ class Settings_api_v1 extends EA_Controller
                 ? $this->settings_model->get(null, $limit, $offset, $order_by)
                 : $this->settings_model->search($keyword, $limit, $offset, $order_by);
 
+            // Only expose allowlisted, non-sensitive settings (default-deny).
+            $settings = array_values(
+                array_filter($settings, fn($setting) => api_setting_is_public($setting['name'] ?? '')),
+            );
+
             foreach ($settings as &$setting) {
                 $this->settings_model->api_encode($setting);
 
@@ -74,6 +79,13 @@ class Settings_api_v1 extends EA_Controller
     public function show(string $name): void
     {
         try {
+            // Hide sensitive / non-allowlisted settings (404 to avoid disclosing existence).
+            if (!api_setting_is_public($name)) {
+                response('', 404);
+
+                return;
+            }
+
             $value = setting($name);
 
             json_response([

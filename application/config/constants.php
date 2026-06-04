@@ -153,5 +153,80 @@ const WEBHOOK_ADMIN_DELETE = 'admin_delete';
 const WEBHOOK_BLOCKED_PERIOD_SAVE = 'blocked_period_save';
 const WEBHOOK_BLOCKED_PERIOD_DELETE = 'blocked_period_delete';
 
+/*
+|--------------------------------------------------------------------------
+| API Output Sanitization
+|--------------------------------------------------------------------------
+|
+| Centralized definitions used to keep sensitive data out of the REST API
+| JSON responses. These only affect OUTPUT serialization; they never change
+| how data is stored or accepted on write (POST/PUT) endpoints.
+|
+*/
+
+// Substrings that mark a field/setting name as sensitive (case-insensitive).
+// Acts as a default-deny safety net for any current or future field whose
+// name contains one of these keywords.
+const API_SENSITIVE_FIELD_KEYWORDS = ['pass', 'secret', 'token', 'key'];
+
+// Allowlist of setting names the API is allowed to expose. Anything not
+// listed here is rejected by default (default-deny). Secrets (smtp_*,
+// ldap_*, google_client_*, google_token, api_token, ...) are intentionally
+// absent and must never be added.
+const API_SETTINGS_ALLOWLIST = [
+    // Company / branding
+    'company_name',
+    'company_email',
+    'company_link',
+    'company_logo',
+    'company_color',
+    'company_tagline',
+    'company_working_plan',
+    // Date / time / locale
+    'date_format',
+    'time_format',
+    'first_weekday',
+    'default_language',
+    'default_timezone',
+    'theme',
+    // Booking behaviour
+    'appointment_status_options',
+    'book_advance_timeout',
+    'minimum_advance_booking',
+    'future_booking_limit',
+    'disable_booking',
+    'disable_booking_message',
+    'display_any_provider',
+    'display_login_button',
+    'require_captcha',
+    'limit_customer_access',
+    'limit_customer_visibility',
+    // Legal / cookie notices
+    'display_cookie_notice',
+    'cookie_notice_content',
+    'display_privacy_policy',
+    'privacy_policy_content',
+    'display_terms_and_conditions',
+    'terms_and_conditions_content',
+    'display_delete_personal_information',
+    // Booking form field visibility / requirements
+    'display_first_name',
+    'display_last_name',
+    'display_email',
+    'display_phone_number',
+    'display_address',
+    'display_city',
+    'display_zip_code',
+    'display_notes',
+    'require_first_name',
+    'require_last_name',
+    'require_email',
+    'require_phone_number',
+    'require_address',
+    'require_city',
+    'require_zip_code',
+    'require_notes',
+];
+
 /* End of file constants.php */
 /* Location: ./application/config/constants.php */
