@@ -290,7 +290,8 @@ class Webhooks_model extends EA_Model
             'name' => $webhook['name'],
             'url' => $webhook['url'],
             'actions' => $webhook['actions'],
-            'secret_token' => $webhook['secret_token'],
+            // NOTE: secret_token is intentionally omitted from the API output: it is the webhook
+            // signing secret and must never be exposed in responses. Writes (api_decode) still accept it.
             'is_ssl_verified' => $webhook['is_ssl_verified'],
             'notes' => $webhook['notes'],
         ];
