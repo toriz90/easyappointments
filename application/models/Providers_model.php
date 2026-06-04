@@ -781,23 +781,14 @@ class Providers_model extends EA_Model
                 'googleSync' => array_key_exists('google_sync', $provider['settings'])
                     ? filter_var($provider['settings']['google_sync'], FILTER_VALIDATE_BOOLEAN)
                     : null,
-                'googleToken' => array_key_exists('google_token', $provider['settings'])
-                    ? $provider['settings']['google_token']
-                    : null,
+                // NOTE: googleToken, caldavUrl, caldavUsername and caldavPassword are intentionally
+                // omitted from the API output: they are OAuth/CalDAV credentials and must never be
+                // exposed in responses. Writes (api_decode) still accept them normally.
                 'googleCalendar' => array_key_exists('google_calendar', $provider['settings'])
                     ? $provider['settings']['google_calendar']
                     : null,
                 'caldavSync' => array_key_exists('caldav_sync', $provider['settings'])
                     ? filter_var($provider['settings']['caldav_sync'], FILTER_VALIDATE_BOOLEAN)
-                    : null,
-                'caldavUrl' => array_key_exists('caldav_url', $provider['settings'])
-                    ? $provider['settings']['caldav_url']
-                    : null,
-                'caldavUsername' => array_key_exists('caldav_username', $provider['settings'])
-                    ? $provider['settings']['caldav_username']
-                    : null,
-                'caldavPassword' => array_key_exists('caldav_password', $provider['settings'])
-                    ? $provider['settings']['caldav_password']
                     : null,
                 'syncFutureDays' => array_key_exists('sync_future_days', $provider['settings'])
                     ? (int) $provider['settings']['sync_future_days']
