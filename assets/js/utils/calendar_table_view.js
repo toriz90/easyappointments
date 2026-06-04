@@ -259,8 +259,17 @@ App.Utils.CalendarTableView = (function () {
                             $field.val(fieldData.value);
                         }
                     });
-                    App.Components.AppointmentsModal.applyMutualExclusionOnLoad();
                 }
+                // Always reconstruct the mutual-exclusion state from the populated selects,
+                // independently of whether appointment.custom_fields arrived in the payload
+                // (the table-view endpoint may omit it; the legacy block above still fills
+                // #custom-field-1..5). Matches the booking form, which also calls this
+                // unconditionally on load.
+                // Follow-up: exclusive fields with a DB id > 5 are NOT covered by the legacy
+                // block, so if custom_fields is missing they would not be populated and the
+                // exclusion could not detect them. Proper fix is to make the endpoint return
+                // custom_fields (separate backend task).
+                App.Components.AppointmentsModal.applyMutualExclusionOnLoad();
 
                 App.Components.ColorSelection.setColor(
                     $appointmentsModal.find('#appointment-color'),
