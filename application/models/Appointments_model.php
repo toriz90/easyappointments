@@ -652,6 +652,7 @@ class Appointments_model extends EA_Model
     {
         $encoded_resource = [
             'id' => array_key_exists('id', $appointment) ? (int) $appointment['id'] : null,
+            'folio' => array_key_exists('folio', $appointment) ? $appointment['folio'] : null,
             'book' => $appointment['book_datetime'],
             'start' => $appointment['start_datetime'],
             'end' => $appointment['end_datetime'],
