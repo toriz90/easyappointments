@@ -110,7 +110,10 @@ class Appointment_confirmation_pdf
                 $this->extract_custom_field($appointment, 'Modelo del equipo'),
                 $dash,
             ),
-            'motivo'          => $this->value_or_dash($appointment['notes'] ?? null, $dash),
+            'motivo'          => $this->value_or_dash(
+                $this->extract_custom_field($appointment, 'Detalles'),
+                $dash,
+            ),
         ];
     }
 
