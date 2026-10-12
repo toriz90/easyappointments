@@ -22,13 +22,13 @@
  */
 ?>
 
-<div id="wizard-frame-3" class="wizard-frame" style="display:none;">
-    <div class="frame-container">
+<div id="wizard-frame-3" class="wizard-frame p-3 p-md-4" style="display:none;">
+    <div class="frame-container py-3" style="min-height: 500px;">
 
-        <h2 class="frame-title"><?= lang('customer_information') ?></h2>
+        <h2 class="frame-title fw-light text-center mb-4 text-muted"><?= lang('customer_information') ?></h2>
 
         <div class="row frame-content">
-            <div class="col-12 col-md-6 field-col mx-auto">
+            <div class="col-12 col-lg-6 field-col mx-auto">
                 <?php if ($display_first_name): ?>
                     <div class="mb-3">
                         <label for="first-name" class="form-label">
@@ -90,10 +90,9 @@
                 component('custom_fields', ['custom_fields' => $leftColumnFields]);
                 ?>
 
-                <?php slot('after_custom_fields'); ?>
             </div>
 
-            <div class="col-12 col-md-6 field-col mx-auto">
+            <div class="col-12 col-lg-6 field-col mx-auto">
                 <?php if ($display_address): ?>
                     <div class="mb-3">
                         <label for="address" class="form-label">
@@ -150,19 +149,33 @@
                 component('custom_fields', ['custom_fields' => $rightColumnFields]);
                 ?>
 
+                <?php if (!vars('manage_mode')): ?>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox" id="remember-me" class="form-check-input">
+                        <label for="remember-me" class="form-check-label">
+                            <?= lang('remember_me') ?>
+                        </label>
+                    </div>
+                    <div class="form-text text-muted small">
+                        <?= lang('remember_me_hint') ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <?php slot('info_second_column'); ?>
             </div>
 
         </div>
     </div>
 
-    <div class="command-buttons">
-        <button type="button" id="button-back-3" class="btn button-back btn-outline-secondary"
+    <div class="command-buttons text-center my-3 mx-auto d-md-flex justify-content-md-between">
+        <button type="button" id="button-back-3" class="btn button-back btn-outline-secondary" style="min-width: 120px; margin-right: 10px;"
                 data-step_index="3">
             <i class="fas fa-chevron-left me-2"></i>
             <?= lang('back') ?>
         </button>
-        <button type="button" id="button-next-3" class="btn button-next btn-dark"
+        <button type="button" id="button-next-3" class="btn button-next btn-dark" style="min-width: 120px; margin-right: 10px;"
                 data-step_index="3">
             <?= lang('next') ?>
             <i class="fas fa-chevron-right ms-2"></i>

@@ -63,7 +63,7 @@ $custom_fields = $custom_fields ?? []; ?>
     <?php if (setting('display_custom_field_' . $i)): ?>
         <div class="mb-3">
             <label for="legacy-custom-field-<?= $i ?>" class="form-label">
-                <?= setting('label_custom_field_' . $i) ?: lang('custom_field') . ' #' . $i ?>
+                <?= e(setting('label_custom_field_' . $i) ?: lang('custom_field') . ' #' . $i) ?>
                 <?php if (setting('require_custom_field_' . $i)): ?>
                     <span class="text-danger" <?= $disabled ? 'hidden' : '' ?>>*</span>
                 <?php endif; ?>

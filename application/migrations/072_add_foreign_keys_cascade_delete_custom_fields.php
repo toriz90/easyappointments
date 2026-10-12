@@ -30,23 +30,30 @@ class Migration_Add_foreign_keys_cascade_delete_custom_fields extends EA_Migrati
                 $this->db->query("ALTER TABLE {$this->db->dbprefix}custom_field_values DROP INDEX custom_field_values_id_custom_fields");
             }
 
-            // Add foreign key with CASCADE DELETE for custom_field_options
-            $this->db->query("
-                ALTER TABLE {$this->db->dbprefix}custom_field_options
-                ADD CONSTRAINT custom_field_options_id_custom_fields
-                FOREIGN KEY (id_custom_fields) REFERENCES {$this->db->dbprefix}custom_fields(id)
-                ON DELETE CASCADE
-                ON UPDATE CASCADE
-            ");
+            // Add foreign key with CASCADE DELETE for custom_field_options (skip if already present,
+            // otherwise MySQL errors with "duplicate foreign key constraint name" on re-run).
+            $result = $this->db->query("SHOW CREATE TABLE {$this->db->dbprefix}custom_field_options")->row_array();
+            if (!isset($result['Create Table']) || strpos($result['Create Table'], 'custom_field_options_id_custom_fields') === false) {
+                $this->db->query("
+                    ALTER TABLE {$this->db->dbprefix}custom_field_options
+                    ADD CONSTRAINT custom_field_options_id_custom_fields
+                    FOREIGN KEY (id_custom_fields) REFERENCES {$this->db->dbprefix}custom_fields(id)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE
+                ");
+            }
 
-            // Add foreign key with CASCADE DELETE for custom_field_values
-            $this->db->query("
-                ALTER TABLE {$this->db->dbprefix}custom_field_values
-                ADD CONSTRAINT custom_field_values_id_custom_fields
-                FOREIGN KEY (id_custom_fields) REFERENCES {$this->db->dbprefix}custom_fields(id)
-                ON DELETE CASCADE
-                ON UPDATE CASCADE
-            ");
+            // Add foreign key with CASCADE DELETE for custom_field_values (skip if already present).
+            $result = $this->db->query("SHOW CREATE TABLE {$this->db->dbprefix}custom_field_values")->row_array();
+            if (!isset($result['Create Table']) || strpos($result['Create Table'], 'custom_field_values_id_custom_fields') === false) {
+                $this->db->query("
+                    ALTER TABLE {$this->db->dbprefix}custom_field_values
+                    ADD CONSTRAINT custom_field_values_id_custom_fields
+                    FOREIGN KEY (id_custom_fields) REFERENCES {$this->db->dbprefix}custom_fields(id)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE
+                ");
+            }
 
             $this->db->query('SET FOREIGN_KEY_CHECKS = 1');
         }

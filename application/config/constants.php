@@ -120,6 +120,7 @@ const LDAP_WHITELISTED_ATTRIBUTES = [
     'objectcategory',
     'memberof',
     'distinguishedname',
+    'uid',
 ];
 
 const LDAP_DEFAULT_FIELD_MAPPING = [
@@ -232,6 +233,8 @@ const API_SETTINGS_ALLOWLIST = [
     'require_zip_code',
     'require_notes',
 ];
+
+const STORAGE_RETENTION_DAYS = 90;
 
 /* End of file constants.php */
 /* Location: ./application/config/constants.php */

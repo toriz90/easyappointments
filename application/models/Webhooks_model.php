@@ -233,6 +233,33 @@ class Webhooks_model extends EA_Model
     }
 
     /**
+     * Get webhooks as options for dropdowns.
+     *
+     * @param array|string|null $where Where conditions.
+     *
+     * @return array Returns an array of options with 'value' and 'label' keys.
+     */
+    public function to_options(array|string|null $where = null): array
+    {
+        if ($where !== null) {
+            $this->db->where($where);
+        }
+
+        $webhooks = $this->db->select('id, name')->from('webhooks')->order_by('name')->get()->result_array();
+
+        $options = [];
+
+        foreach ($webhooks as $webhook) {
+            $options[] = [
+                'value' => (int) $webhook['id'],
+                'label' => $webhook['name'],
+            ];
+        }
+
+        return $options;
+    }
+
+    /**
      * Get all webhooks that match the provided criteria.
      *
      * @param array|string|null $where Where conditions.
@@ -290,9 +317,9 @@ class Webhooks_model extends EA_Model
             'name' => $webhook['name'],
             'url' => $webhook['url'],
             'actions' => $webhook['actions'],
-            // NOTE: secret_token is intentionally omitted from the API output: it is the webhook
+            // NOTE: secretToken is intentionally omitted from the API output: it is the webhook
             // signing secret and must never be exposed in responses. Writes (api_decode) still accept it.
-            'is_ssl_verified' => $webhook['is_ssl_verified'],
+            'isSslVerified' => $webhook['is_ssl_verified'],
             'notes' => $webhook['notes'],
         ];
 

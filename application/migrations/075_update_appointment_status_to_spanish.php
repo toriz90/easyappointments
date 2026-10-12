@@ -48,14 +48,19 @@ class Migration_Update_appointment_status_to_spanish extends EA_Migration
                 . "AND status IN ('Cancelled','Canceled')"
             );
 
-            // Backfill remaining real bookings with non-Spanish or empty statuses.
+            // Backfill remaining real bookings that still carry a legacy English status or no
+            // status at all. Deliberately NOT "status NOT IN (<spanish set>)": that broad form
+            // would also catch (and silently clobber) any value outside both taxonomies, and —
+            // since production already ran this migration once — would make a second run
+            // destructive instead of a no-op. Listing the legacy English values explicitly keeps
+            // re-running this migration safe once every row is already in the Spanish set.
             $this->db->query(
                 "UPDATE {$appointments} "
                 . "SET status = 'Confirmada' "
                 . "WHERE is_unavailability = 0 "
                 . "AND (status IS NULL "
                 . " OR status = '' "
-                . " OR status NOT IN ('Confirmada','Atendida','No se presentó','Cancelada'))"
+                . " OR status IN ('Booked','Confirmed','Rescheduled','Draft'))"
             );
         }
 

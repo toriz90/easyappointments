@@ -3,12 +3,107 @@
 This file contains the code changes that were introduced into each release (starting from v1.1.0) so that is easy for 
 developers to maintain and readjust their custom modifications on the main project codebase.
 
-## [Unreleased]
+## [1.6.0] - 2026-05-27
+
+### Added
+
+- Added request method check on each request so that only allowed methods are accepted
+- Add Jitsi integration and link generation for appointments made via the public page
+- Allow providers to toggle the syncing themselves (#1731)
+- Add new meeting link field to appointments for storing online video conference locations
+- Create new integration section for the Google Calendar integration (#1690)
+- Add settings to not display the Add to Google Calendar button in the booking confirmation page (#1763)
+- Add new Google Meet setting and meeting link support for appointments while syncing with Google (#1589)
+- Add Select All / None buttons to multi-checkbox fields
+- Add prompt for client notifications so that they are not sent every time an appointment changes
+- Add notification prompt when creating new appointments from the calendar page
+- Add notification prompt when deleting appointments from the calendar page
+- Connect RSS updates from the official blog and show them in the about page
+- ALTCHA integration added as an alternative CAPTCHA step (#1155)
+- Add a legal notice and imprint links to the booking page and the legal settings page (#1407)
+- When someone clicks on password reset, implement a link delivery and not just change the password directly
+- Login / Backend button on the disabled booking page message screen  (#1777)
+- Allow customers to save their information in local storage (#1696)
+- Implementation of additional GDPR features in Easy!Appointments (#535)
+- Allow users to define working plan exceptions for multiple dates (#1706)
+- Add CAPTCHA support for all the public forms in order to block abusive requests (#1754)
+- Add validation when saving the working plan (#1758)
+
+### Changed
+
+- Improved CRUD list entries to show pointer cursor when selected
+- Centered and narrowed CRUD list and form content on larger screens for better readability
+- Refactored cleanup logic from Console controller into a dedicated Cleanup library
+- Make the phone number field of backend users optional (#1709)
+- Change the main CRUD layout and navigation structure (list first)
+- Replace the availabilities type with the new slot interval field
+- Keep the provider option selected in the booking page if possible (#1672)
+- Improve setting language by GET parameter (#1620)
+- Improved appointment deletion flow: ask notification question first, only show the cancellation reason dialog when the user chooses to notify users
+- Restyled secondary action buttons (Cancel, Close) to use the outline secondary variant for a consistent UI
+- Simplified all documentation pages for better readability by non-technical users
+- Allow users to assign a provider to the service in the services page and update the label (assign the service to)
+- Perform various security optimizations in the app
+- Custom fields are displayed in appointment details popup (#1830)
+- When booking in calendar add a new check that will detect if the selected provider is still available or not
+- If the current user has not available services or providers to be displayed in the public booking page, then show an info message instead of the booking page
 
 ### Fixed
 
-- Cannot modify appointment if provider changes time zone (#1789)
+- Release builds now ship only the Google Calendar service instead of every Google API service, keeping the download size small
+- Language switching now works for languages with hyphenated codes such as Brazilian Portuguese and Traditional Chinese
+- Added missing language code mappings for Brazilian Portuguese and Traditional Chinese
+- Working plan exception break inputs now use the correct size and no longer look oversized
+- "No breaks" placeholder is now removed when the first break is added to a working plan exception
+- Account page can now be saved when the phone number field is left empty
+- Booking cancellation no longer shows a success page when the appointment was not actually deleted
+- Booking cancellation no longer fails because of a security check mismatch on public booking routes
+- Booking cancellation error page now shows the real reason (for example "rate limit exceeded") instead of a generic "appointment not found" message
+- Booking cancellation no longer crashes when the cache is unavailable
+- Old session files are now cleaned up properly
+- Added automatic cleanup of cache, sessions and logs older than 90 days
+- Appointments can now be modified after a provider changes their time zone (#1789)
+- Customer appointment link in the table calendar view now opens the appointment modal as expected
+- The session garbage collector now runs periodically to prevent session storage bloat (#1793)
+- Providers can no longer pick customers they are not connected with when the customer visibility limit is enabled
+- Improved CalDAV syncing compatibility with more calendar systems (#1840)
+- Optimized backend queries during the booking process (#1721)
+- Added the sequence field to the ICS file so calendar apps correctly update appointments after multiple changes
+- Creating a "new" customer from the backend calendar appointment modal now reuses the existing customer record when the same email already exists
+- Login page username and password fields now keep proper spacing between the icon and the typed text
+- Password recovery and password reset form inputs now keep proper spacing between the icon and the typed text
+- Bottom toast notifications on mobile are now centered horizontally instead of being stuck to the left edge
+- Fixed a security issue where an administrator could inject scripts into the "booking disabled" message that would then run for every visitor of the public booking page
+- Fixed a security issue where a provider could create or modify appointments under another provider's account
+- Fixed a security issue where the CalDAV connection test could be abused to reach internal services on the server's network or leak error details from those services
+- The CalDAV safety check is now enabled by default and can be toggled inside the CalDAV library, with the local Docker test server always allowed so local setups can still test the integration
+- Fixed a security issue where a backend user could hijack another provider's Google Calendar sync by linking it to their own Google account
+- Fixed a warning that appeared in some availability API responses when booking-window settings were left empty
+- The time picker inside the working plan exception break editor is no longer cropped by the modal and now shows the full dropdown
+- Fixed a privacy issue where the appointment reschedule page exposed more customer details (email, phone, address, custom fields, etc.) than needed; only the customer's name is now embedded in the page
+- The page header now correctly picks up the configured company color on themes that previously kept a hardcoded blue border
+- The custom company color no longer overrides theme styles on buttons, forms, menus, dropdowns, alerts and lists, so the selected theme keeps its intended look
+- The "Booking Link" label next to the link icon on the Providers and Services pages was replaced with a tooltip on hover for a cleaner look
+- Calendar table view filters now lay out cleanly on mobile, with the provider and service filters on their own rows below the date controls
+- Calendar month view day numbers no longer appear underlined or in the link color
+- Webhooks are now triggered only for the exact actions they are subscribed to, instead of matching similarly named actions by substring
+- Google Calendar sync no longer silently drops events from large calendars (more than ~250 events); the sync now pages through all events
+- Fixed a parse error in the Italian, Catalan, French and Luxembourgish translations of the CAPTCHA warning message caused by unescaped apostrophes
+- Flatpickr month picker no longer cuts off the bottom of month names with descenders
+- Corrected the "notify users on update" question translation in 40 non-English language files so it matches the intended English meaning
+- Fixed an error when deleting personal information from the Privacy page on installations where the cache is unavailable
+- Read-only and disabled form fields are now readable on dark themes
+- Dark themes are no longer overridden by a light page background, even when a custom company color is configured
+- Improved the contrast of the secondary color on the Darkly theme so buttons, links and text are easier to read
+- Section headings on CRUD and settings pages (e.g. "Details") are now readable on dark themes
+- Cards on the services, providers, secretaries, customers and integrations pages now follow the theme background instead of being forced to white
+- Form inputs on the Materia theme now show the Material-style underline on focus instead of a full border (also fixes related visual glitches on Cosmo alerts and Darkly/Flatly pagination)
+- The dropdown caret is now visible on timezone selects and the Google Calendar sync select across all themes
+- Filter list hover background is now readable on dark themes
 
+### Removed
+
+- Remove the patch.php file 
 
 
 

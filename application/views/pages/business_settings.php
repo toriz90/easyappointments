@@ -2,17 +2,17 @@
 
 <?php section('content'); ?>
 
-<div id="business-logic-page" class="container backend-page">
+<div id="business-logic-page" class="container backend-page py-3">
     <div id="business-logic">
         <div class="row">
-            <div class="col-sm-3 offset-sm-1">
+            <div class="col-sm-3">
                 <?php component('settings_nav'); ?>
             </div>
-            <div class="col-sm-6">
+            <div class="col-sm-9">
                 <form>
                     <fieldset>
                         <div class="d-flex justify-content-between align-items-center border-bottom mb-4 py-2">
-                            <h4 class="text-black-50 mb-0 fw-light">
+                            <h4 class="mb-0 fw-light">
                                 <?= lang('business_logic') ?>
                             </h4>
 
@@ -24,22 +24,24 @@
                             <?php endif; ?>
                         </div>
 
-                        <h5 class="text-black-50 mb-3 fw-light"><?= lang('working_plan') ?></h5>
+                        <h5 class="mb-3 fw-light"><?= lang('working_plan') ?></h5>
 
                         <p class="form-text text-muted mb-4">
                             <?= lang('edit_working_plan_hint') ?>
                         </p>
 
-                        <table class="working-plan table table-striped">
-                            <thead>
-                            <tr>
-                                <th><?= lang('day') ?></th>
-                                <th><?= lang('start') ?></th>
-                                <th><?= lang('end') ?></th>
-                            </tr>
-                            </thead>
-                            <tbody><!-- Dynamic Content --></tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="working-plan table table-striped">
+                                <thead>
+                                <tr>
+                                    <th><?= lang('day') ?></th>
+                                    <th><?= lang('start') ?></th>
+                                    <th><?= lang('end') ?></th>
+                                </tr>
+                                </thead>
+                                <tbody><!-- Dynamic Content --></tbody>
+                            </table>
+                        </div>
 
                         <div class="text-end mb-5">
                             <button class="btn btn-outline-secondary" id="apply-global-working-plan" type="button">
@@ -48,7 +50,7 @@
                             </button>
                         </div>
 
-                        <h5 class="text-black-50 mb-3 fw-light"><?= lang('breaks') ?></h5>
+                        <h5 class="mb-3 fw-light"><?= lang('breaks') ?></h5>
 
                         <p class="form-text text-muted">
                             <?= lang('edit_breaks_hint') ?>
@@ -63,20 +65,22 @@
 
                         <br>
 
-                        <table class="breaks table table-striped mb-5">
-                            <thead>
-                            <tr>
-                                <th><?= lang('day') ?></th>
-                                <th><?= lang('start') ?></th>
-                                <th><?= lang('end') ?></th>
-                                <th><?= lang('actions') ?></th>
-                            </tr>
-                            </thead>
-                            <tbody><!-- Dynamic Content --></tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="breaks table table-striped mb-5">
+                                <thead>
+                                <tr>
+                                    <th><?= lang('day') ?></th>
+                                    <th><?= lang('start') ?></th>
+                                    <th><?= lang('end') ?></th>
+                                    <th><?= lang('actions') ?></th>
+                                </tr>
+                                </thead>
+                                <tbody><!-- Dynamic Content --></tbody>
+                            </table>
+                        </div>
 
                         <?php if (can('view', PRIV_BLOCKED_PERIODS)): ?>
-                            <h5 class="text-black-50 mb-3 fw-light"><?= lang('blocked_periods') ?></h5>
+                            <h5 class="mb-3 fw-light"><?= lang('blocked_periods') ?></h5>
 
                             <p class="form-text text-muted">
                                 <?= lang('blocked_periods_hint') ?>
@@ -121,7 +125,7 @@
                         </div>
 
                         <div class="d-flex justify-content-start align-items-center mb-3">
-                            <h5 class="text-black-50 mb-0 me-3 fw-light">
+                            <h5 class="mb-0 me-3 fw-light">
                                 <?= lang('appointment_status_options') ?>
                             </h5>
                         </div>
@@ -134,7 +138,6 @@
                             'attributes' => 'id="appointment-status-options"',
                         ]); ?>
 
-                        <?php slot('after_primary_fields'); ?>
                     </fieldset>
                 </form>
             </div>

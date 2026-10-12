@@ -7,23 +7,22 @@
  */
 ?>
 
-<nav id="header" class="navbar navbar-expand-md navbar-dark">
-    <div id="header-logo" class="navbar-brand">
+<nav id="header" class="navbar navbar-expand-md navbar-dark bg-primary p-0">
+    <div id="header-logo" class="navbar-brand p-1 lh-1">
         <?php if (setting('company_logo')): ?>
             <?php if (strpos(setting('company_logo'), 'data:image') === 0): ?>
-                <img src="<?= setting('company_logo') ?>" alt="<?= e(setting('company_name') ?: 'Logo') ?>">
+                <img src="<?= setting('company_logo') ?>" alt="<?= e(setting('company_name') ?: 'Logo') ?>" class="float-start me-2" style="width: 45px; height: 45px;">
             <?php else: ?>
-                <img src="<?= base_url('storage/uploads/' . setting('company_logo')) ?>" alt="<?= e(setting('company_name') ?: 'Logo') ?>">
+                <img src="<?= base_url('storage/uploads/' . setting('company_logo')) ?>" alt="<?= e(setting('company_name') ?: 'Logo') ?>" class="float-start me-2" style="width: 45px; height: 45px;">
             <?php endif; ?>
         <?php else: ?>
-            <img src="<?= base_url('assets/img/logo.png') ?>" alt="logo">
+            <img src="<?= base_url('assets/img/logo.png') ?>" alt="logo" class="float-start me-2" style="width: 45px; height: 45px;">
         <?php endif; ?>
-        <h6><?= e(strtoupper(setting('company_name') ?: 'EASY!APPOINTMENTS')) ?></h6>
-        <small><?= e(setting('company_tagline') ?: 'Online Appointment Scheduler') ?></small>
+        <h6 class="mb-1 mt-1 fw-bold text-white" style="font-size: 15px;"><?= e(strtoupper(setting('company_name') ?: 'EASY!APPOINTMENTS')) ?></h6>
+        <small class="d-block text-white-50" style="font-size: 12px;"><?= e(setting('company_tagline') ?: 'Online Appointment Scheduler') ?></small>
     </div>
 
-    <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#header-menu">
-        <span class="sr-only">Toggle navigation</span>
+    <button type="button" class="navbar-toggler me-1" data-bs-toggle="collapse" data-bs-target="#header-menu">
         <span class="navbar-toggler-icon"></span>
     </button>
 
@@ -31,11 +30,11 @@
         <ul class="navbar-nav">
             <?php $hidden = can('view', PRIV_APPOINTMENTS) ? '' : 'd-none'; ?>
             <?php $active = $active_menu == PRIV_APPOINTMENTS ? 'active' : ''; ?>
-            <li class="nav-item <?= $active . $hidden ?>">
+            <li class="nav-item text-center <?= $active . $hidden ?>" style="min-width: 100px;">
                 <a href="<?= site_url(
                     'calendar' . (vars('calendar_view') === CALENDAR_VIEW_TABLE ? '?view=table' : ''),
                 ) ?>"
-                   class="nav-link"
+                   class="nav-link text-white fw-light py-3 px-3"
                    data-tippy-content="<?= lang('manage_appointment_record_hint') ?>">
                     <i class="fas fa-calendar-alt me-2"></i>
                     <?= lang('calendar') ?>
@@ -53,8 +52,8 @@
 
             <?php $hidden = can('view', PRIV_CUSTOMERS) ? '' : 'd-none'; ?>
             <?php $active = $active_menu == PRIV_CUSTOMERS ? 'active' : ''; ?>
-            <li class="nav-item <?= $active . $hidden ?>">
-                <a href="<?= site_url('customers') ?>" class="nav-link"
+            <li class="nav-item text-center <?= $active . $hidden ?>" style="min-width: 100px;">
+                <a href="<?= site_url('customers') ?>" class="nav-link text-white fw-light py-3 px-3"
                    data-tippy-content="<?= lang('manage_customers_hint') ?>">
                     <i class="fas fa-user-friends me-2"></i>
                     <?= lang('customers') ?>
@@ -63,8 +62,8 @@
 
             <?php $hidden = can('view', PRIV_SERVICES) ? '' : 'd-none'; ?>
             <?php $active = $active_menu == PRIV_SERVICES ? 'active' : ''; ?>
-            <li class="nav-item dropdown <?= $active . $hidden ?>">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
+            <li class="nav-item dropdown text-center <?= $active . $hidden ?>" style="min-width: 100px;">
+                <a class="nav-link dropdown-toggle text-white fw-light py-3 px-3" href="#" data-bs-toggle="dropdown"
                    data-tippy-content="<?= lang('manage_services_hint') ?>">
                     <i class="fas fa-business-time me-2"></i>
                     <?= lang('services') ?>
@@ -81,8 +80,8 @@
 
             <?php $hidden = can('view', PRIV_USERS) ? '' : 'd-none'; ?>
             <?php $active = $active_menu == PRIV_USERS ? 'active' : ''; ?>
-            <li class="nav-item dropdown <?= $active . $hidden ?>">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
+            <li class="nav-item dropdown text-center <?= $active . $hidden ?>" style="min-width: 100px;">
+                <a class="nav-link dropdown-toggle text-white fw-light py-3 px-3" href="#" data-bs-toggle="dropdown"
                    data-tippy-content="<?= lang('manage_users_hint') ?>">
                     <i class="fas fa-users me-2"></i>
                     <?= lang('users') ?>
@@ -100,12 +99,10 @@
                 </div>
             </li>
 
-            <?php slot('before_user_nav_item'); ?>
-
             <?php $hidden = can('view', PRIV_SYSTEM_SETTINGS) || can('view', PRIV_USER_SETTINGS) ? '' : 'd-none'; ?>
             <?php $active = $active_menu == PRIV_SYSTEM_SETTINGS ? 'active' : ''; ?>
-            <li class="nav-item dropdown <?= $active . $hidden ?>">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
+            <li class="nav-item dropdown text-center <?= $active . $hidden ?>" style="min-width: 100px;">
+                <a class="nav-link dropdown-toggle text-white fw-light py-3 px-3" href="#" data-bs-toggle="dropdown"
                    data-tippy-content="<?= lang('settings_hint') ?>">
                     <i class="fas fa-user me-2"></i>
                     <?= e(vars('user_display_name')) ?>
@@ -113,18 +110,19 @@
                 <div class="dropdown-menu dropdown-menu-end">
                     <?php if (can('view', PRIV_SYSTEM_SETTINGS)): ?>
                         <a class="dropdown-item" href="<?= site_url('general_settings') ?>">
+                            <i class="fas fa-cogs me-2"></i>
                             <?= lang('settings') ?>
                         </a>
                     <?php endif; ?>
 
-                    <?php slot('after_settings_dropdown_item'); ?>
-
                     <a class="dropdown-item" href="<?= site_url('account') ?>">
+                        <i class="fas fa-user me-2"></i>
                         <?= lang('account') ?>
                     </a>
-                    <!-- About link hidden for white label -->
+                    <!-- About/Premium/Booking links hidden for white label -->
                     <div class="dropdown-divider"></div>
                     <a class="dropdown-item" href="<?= site_url('logout') ?>">
+                        <i class="fas fa-sign-out me-2"></i>
                         <?= lang('log_out') ?>
                     </a>
                 </div>
@@ -135,8 +133,8 @@
 
 <div id="notification" style="display: none;"></div>
 
-<div id="loading" style="display: none;">
-    <div class="any-element animation is-loading">
+<div id="loading" class="position-fixed top-0 start-0 w-100 h-100" style="display: none; z-index: 999999; background: rgba(255, 255, 255, 0.75);">
+    <div class="any-element animation is-loading d-block mx-auto">
         &nbsp;
     </div>
 </div>

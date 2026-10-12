@@ -64,6 +64,7 @@ class Booking_confirmation extends EA_Controller
             'matomo_analytics_site_id' => setting('matomo_analytics_site_id'),
             'add_to_google_url' => $add_to_google_url,
             'appointment_hash' => $appointment_hash,
+            'display_add_to_google_calendar' => setting('display_add_to_google_calendar', '1'),
         ]);
 
         $this->load->view('pages/booking_confirmation');

@@ -1,77 +1,41 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<?php extend('layouts/account_layout'); ?>
 
-    <title>Update</title>
+<?php section('content'); ?>
 
-    <link rel="stylesheet" type="text/css" href="<?= asset_url('assets/css/themes/default.min.css') ?>">
-    <?php if (function_exists('setting') && setting('company_logo')): ?>
-        <?php if (strpos(setting('company_logo'), 'data:image') === 0): ?>
-            <link rel="icon" type="image/x-icon" href="<?= setting('company_logo') ?>">
-        <?php else: ?>
-            <link rel="icon" type="image/x-icon" href="<?= base_url('storage/uploads/' . setting('company_logo')) ?>">
-        <?php endif; ?>
-    <?php else: ?>
-        <link rel="icon" type="image/x-icon" href="<?= asset_url('assets/img/favicon.ico') ?>">
-    <?php endif; ?>
-    <link rel="stylesheet" type="text/css" href="<?= asset_url('assets/css/general.css') ?>">
-    <link rel="stylesheet" type="text/css" href="<?= asset_url('assets/css/pages/update.css') ?>">
-</head>
-<body>
-<header>
-    <div class="container">
-        <h1 class="page-title">Update</h1>
-    </div>
-</header>
+<h3 class="mb-3">Update</h3>
 
-<div class="container">
-    <div class="row">
-        <div class="col">
-            <?php if (vars('success')): ?>
-                <div class="jumbotron">
-                    <h1 class="display-4">Success!</h1>
-                    <p class="lead">
-                        The database got updated successfully.
-                    </p>
-                    <hr class="my-4">
-                    <p>
-                        You can now use the latest version.
-                    </p>
-                    <a href="<?= site_url('about') ?>" class="btn btn-success btn-large">
-                        <i class="fas fa-wrench me-2"></i>
-                        <?= lang('backend_section') ?>
-                    </a>
-                </div>
-            <?php else: ?>
-                <div class="jumbotron">
-                    <h1 class="display-4">Failure!</h1>
-                    <p class="lead">
-                        There was an error during the update process.
-                    </p>
-                    <hr class="my-4">
-                    <p>
-                        Please restore your database backup.
-                    </p>
-                    <a href="<?= site_url('login') ?>" class="btn btn-success btn-large">
-                        <i class="fas fa-wrench me-2"></i>
-                        <?= lang('backend_section') ?>
-                    </a>
-
-                    <p>
-                        Please restore your database backup.
-                    </p>
-                </div>
-
-                <div class="well text-start">
-                    Error Message: <?= vars('exception') ?>
-                </div>
-            <?php endif; ?>
+<?php if (vars('success')): ?>
+    <div>
+        <div class="alert alert-success">
+            Success! The database got updated successfully.
         </div>
-    </div>
-</div>
 
-<script src="<?= asset_url('assets/vendor/@fortawesome-fontawesome-free/fontawesome.min.js') ?>"></script>
-<script src="<?= asset_url('assets/vendor/@fortawesome-fontawesome-free/solid.min.js') ?>"></script>
-</body>
-</html>
+        <p>
+            You can now use the latest version.
+        </p>
+
+        <a href="<?= site_url('about') ?>" class="btn btn-primary btn-large mb-3">
+            <i class="fas fa-wrench me-2"></i>
+            <?= lang('backend_section') ?>
+        </a>
+    </div>
+<?php else: ?>
+    <div>
+        <div class="alert alert-success">
+            Attention! There was an error during the update process.
+        </div>
+
+        <pre>Error Message: <?= vars('exception') ?></pre>
+
+        <p>
+            Please restore your database backup.
+        </p>
+
+        <a href="<?= site_url('login') ?>" class="btn btn-primary btn-large mb-3">
+            <i class="fas fa-wrench me-2"></i>
+            <?= lang('backend_section') ?>
+        </a>
+    </div>
+<?php endif; ?>
+
+<?php end_section('content'); ?>

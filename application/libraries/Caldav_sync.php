@@ -28,6 +28,9 @@ use Sabre\VObject\Reader;
  */
 class Caldav_sync
 {
+    // Toggle SSRF host validation here (enabled by default).
+    protected bool $enable_ssrf_check = true;
+
     /**
      * @var EA_Controller|CI_Controller
      */
@@ -87,7 +90,9 @@ class Caldav_sync
             return $caldav_event_id;
         } catch (GuzzleException $e) {
             $this->handle_guzzle_exception($e, 'Failed to save CalDAV appointment event');
-            return null;
+
+            // Propagate so the controller can report the failure to the user.
+            throw $e;
         }
     }
 
@@ -127,7 +132,9 @@ class Caldav_sync
             return $caldav_event_id;
         } catch (GuzzleException $e) {
             $this->handle_guzzle_exception($e, 'Failed to save CalDAV unavailability event');
-            return null;
+
+            // Propagate so the controller can report the failure to the user.
+            throw $e;
         }
     }
 
@@ -177,7 +184,16 @@ class Caldav_sync
             return $this->convert_caldav_event_to_array_event($vcalendar->VEVENT, $provider_timezone_object);
         } catch (GuzzleException $e) {
             $this->handle_guzzle_exception($e, 'Failed to get CalDAV event');
-            return null;
+
+            // Only swallow 404 ("event not found") — every other error (e.g. 401
+            // invalid credentials, 5xx server failure) must propagate so the caller
+            // can surface it to the user instead of silently treating the event as
+            // missing and deleting the local copy.
+            if ($e instanceof RequestException && $e->hasResponse() && $e->getResponse()->getStatusCode() === 404) {
+                return null;
+            }
+
+            throw $e;
         }
     }
 
@@ -206,8 +222,17 @@ class Caldav_sync
 
             $xml = new SimpleXMLElement($response->getBody(), 0, false, 'd', true);
 
-            if ($xml->children('d', true)) {
-                return $this->parse_xml_events($xml, $start_date_time, $end_date_time, $provider_timezone_object);
+            // Check for both prefixed namespace (xmlns:d="DAV:") and default namespace (xmlns="DAV:")
+            // Prefixed namespace: children('d', true) returns elements
+            // Default namespace: children() without params returns elements
+
+            if (count($xml->children('d', true)) > 0) {
+                return $this->parse_xml_events($xml, $start_date_time, $end_date_time, $provider_timezone_object, 'd');
+            } elseif (count($xml->children('D', true)) > 0) {
+                return $this->parse_xml_events($xml, $start_date_time, $end_date_time, $provider_timezone_object, 'D');
+            } elseif (count($xml->children()) > 0) {
+                // Default namespace - pass null to use children() without namespace parameter
+                return $this->parse_xml_events($xml, $start_date_time, $end_date_time, $provider_timezone_object, null);
             }
 
             $ics_file_urls = $this->extract_ics_file_urls($response->getBody());
@@ -220,7 +245,14 @@ class Caldav_sync
             );
         } catch (GuzzleException $e) {
             $this->handle_guzzle_exception($e, 'Failed to get CalDAV sync events');
-            return [];
+
+            // Only swallow 404 ("calendar not found") — auth and other errors must
+            // propagate so the caller can surface them to the user.
+            if ($e instanceof RequestException && $e->hasResponse() && $e->getResponse()->getStatusCode() === 404) {
+                return [];
+            }
+
+            throw $e;
         }
     }
 
@@ -229,16 +261,35 @@ class Caldav_sync
         string $start_date_time,
         string $end_date_time,
         DateTimeZone $timezone,
+        ?string $xml_namespace = 'd',
     ): array {
         $events = [];
 
-        foreach ($xml->children('d', true) as $response) {
-            $ics_contents = (string) $response->propstat->prop->children('cal', true);
+        // Handle both prefixed (xmlns:d="DAV:") and default (xmlns="DAV:") namespaces
+        $responses = $xml_namespace ? $xml->children($xml_namespace, true) : $xml->children();
 
-            $events = array_merge(
-                $events,
-                $this->expand_ics_content($ics_contents, $start_date_time, $end_date_time, $timezone),
-            );
+        foreach ($responses as $response) {
+            // Use the CalDAV namespace URI to find calendar-data elements regardless of
+            // which prefix the server chose (e.g. 'cal', 'C', 'c', or any other valid prefix).
+            $prop = $response->propstat->prop;
+
+            $ics_contents = '';
+
+            $caldav_children = $prop->children('urn:ietf:params:xml:ns:caldav');
+
+            foreach ($caldav_children as $child) {
+                if ($child->getName() === 'calendar-data') {
+                    $ics_contents = (string) $child;
+                    break;
+                }
+            }
+
+            if ($ics_contents) {
+                $events = array_merge(
+                    $events,
+                    $this->expand_ics_content($ics_contents, $start_date_time, $end_date_time, $timezone),
+                );
+            }
         }
 
         return $events;
@@ -360,9 +411,7 @@ class Caldav_sync
      */
     private function get_http_client(string $caldav_url, string $caldav_username, string $caldav_password): Client
     {
-        if (!filter_var($caldav_url, FILTER_VALIDATE_URL)) {
-            throw new InvalidArgumentException('Invalid CalDAV URL provided: ' . $caldav_url);
-        }
+        $this->assert_safe_caldav_url($caldav_url);
 
         if (!$caldav_username) {
             throw new InvalidArgumentException('Missing CalDAV username');
@@ -380,6 +429,86 @@ class Caldav_sync
             ],
             'auth' => [$caldav_username, $caldav_password],
         ]);
+    }
+
+    /**
+     * Ensure CalDAV URLs are valid and point to public network destinations.
+     */
+    private function assert_safe_caldav_url(string $caldav_url): void
+    {
+        if (!filter_var($caldav_url, FILTER_VALIDATE_URL)) {
+            throw new InvalidArgumentException('Invalid CalDAV URL provided.');
+        }
+
+        $scheme = strtolower((string) parse_url($caldav_url, PHP_URL_SCHEME));
+        $host = trim((string) parse_url($caldav_url, PHP_URL_HOST), '[]');
+
+        if (!in_array($scheme, ['http', 'https'], true) || empty($host)) {
+            throw new InvalidArgumentException('Invalid CalDAV URL provided.');
+        }
+
+        // Local Docker CalDAV host explicitly allowed even when SSRF checks are enabled.
+        if ($scheme === 'http' && strtolower($host) === 'baikal') {
+            return;
+        }
+
+        if (!$this->enable_ssrf_check) {
+            return;
+        }
+
+        $resolved_ips = $this->resolve_host_ips($host);
+
+        if (empty($resolved_ips)) {
+            throw new InvalidArgumentException('CalDAV URL host cannot be resolved.');
+        }
+
+        foreach ($resolved_ips as $resolved_ip) {
+            if (
+                !filter_var(
+                    $resolved_ip,
+                    FILTER_VALIDATE_IP,
+                    FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
+                )
+            ) {
+                throw new InvalidArgumentException('CalDAV URL host is not allowed.');
+            }
+        }
+    }
+
+    /**
+     * Resolve all reachable IPv4/IPv6 addresses for the provided host.
+     */
+    private function resolve_host_ips(string $host): array
+    {
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return [$host];
+        }
+
+        $resolved_ips = [];
+
+        $dns_records = dns_get_record($host, DNS_A + DNS_AAAA);
+
+        if ($dns_records !== false) {
+            foreach ($dns_records as $dns_record) {
+                if (!empty($dns_record['ip'])) {
+                    $resolved_ips[] = $dns_record['ip'];
+                }
+
+                if (!empty($dns_record['ipv6'])) {
+                    $resolved_ips[] = $dns_record['ipv6'];
+                }
+            }
+        }
+
+        if (empty($resolved_ips)) {
+            $ipv4_hosts = gethostbynamel($host);
+
+            if (is_array($ipv4_hosts)) {
+                $resolved_ips = array_merge($resolved_ips, $ipv4_hosts);
+            }
+        }
+
+        return array_values(array_unique($resolved_ips));
     }
 
     /**
@@ -444,7 +573,7 @@ class Caldav_sync
     ): string {
         $ics_file = $this->CI->ics_file->get_stream($appointment, $service, $provider, $customer);
 
-        return str_replace('METHOD:PUBLISH', '', $ics_file);
+        return str_replace('METHOD:REQUEST', '', $ics_file);
     }
 
     /**
@@ -454,7 +583,7 @@ class Caldav_sync
     {
         $ics_file = $this->CI->ics_file->get_unavailability_stream($unavailability, $provider);
 
-        return str_replace('METHOD:PUBLISH', '', $ics_file);
+        return str_replace('METHOD:REQUEST', '', $ics_file);
     }
 
     /**

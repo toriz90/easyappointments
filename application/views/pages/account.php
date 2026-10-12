@@ -2,14 +2,14 @@
 
 <?php section('content'); ?>
 
-<div id="account-page" class="container backend-page">
+<div id="account-page" class="container backend-page py-3">
     <div id="account">
         <div class="row">
             <div class="col-lg-8 offset-lg-2">
                 <form>
                     <fieldset>
                         <div class="d-flex justify-content-between align-items-center border-bottom mb-4 py-2">
-                            <h4 class="text-black-50 mb-0 fw-light">
+                            <h4 class="mb-0 fw-light">
                                 <?= lang('account') ?>
                             </h4>
 
@@ -52,9 +52,8 @@
                                 <div class="mb-3">
                                     <label class="form-label" for="phone-number">
                                         <?= lang('phone_number') ?>
-                                        <span class="text-danger">*</span>
                                     </label>
-                                    <input id="phone-number" class="form-control required">
+                                    <input id="phone-number" class="form-control">
                                 </div>
 
                                 <div class="mb-3">
@@ -154,7 +153,7 @@
                                         <?= lang('timezone') ?>
                                     </label>
                                     <?php component('timezone_dropdown', [
-                                        'attributes' => 'id="timezone" class="form-control required"',
+                                        'attributes' => 'id="timezone" class="form-select required"',
                                         'grouped_timezones' => vars('grouped_timezones'),
                                     ]); ?>
                                 </div>

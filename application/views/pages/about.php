@@ -2,7 +2,7 @@
 
 <?php section('content'); ?>
 
-<div id="about-page" class="container backend-page">
+<div id="about-page" class="container backend-page py-3">
     <div id="about" class="col-lg-8 offset-lg-2">
 
         <div class="text-center my-5">
@@ -30,7 +30,7 @@
 
         <div class="card mb-5">
             <div class="card-header">
-                <h5 class="fw-light text-black-50 mb-0">
+                <h5 class="fw-light mb-0">
                     <?= lang('current_version') ?>
                 </h5>
             </div>
@@ -60,3 +60,4 @@
 </div>
 
 <?php end_section('content'); ?>
+

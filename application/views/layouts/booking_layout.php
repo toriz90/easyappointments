@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#35A768">
     <meta name="google" content="notranslate">
 
-    <meta property="og:title" content="<?= lang('page_title') . ' ' . vars('company_name') ?>"/>
+    <meta property="og:title" content="<?= lang('page_title') . ' ' . e(vars('company_name')) ?>"/>
     <meta property="og:description" content="Book Your Appointment With A Few Clicks"/>
     <meta property="og:url" content="<?= base_url() ?>">
     <meta property="og:image" content="<?= base_url('assets/img/social-card.png') ?>"/>
@@ -15,7 +15,7 @@
 
     <?php slot('meta'); ?>
 
-    <title><?= lang('page_title') . ' ' . vars('company_name') ?></title>
+    <title><?= lang('page_title') . ' ' . e(vars('company_name')) ?></title>
 
     <?php if (vars('company_logo')): ?>
         <?php if (strpos(vars('company_logo'), 'data:image') === 0): ?>
@@ -39,9 +39,9 @@
 </head>
 
 <body>
-<div id="main" class="container">
-    <div class="row wrapper">
-        <div id="book-appointment-wizard" class="col-12 col-lg-10 col-xl-8 col-xxl-7">
+<div id="main" class="container min-vh-100">
+    <div class="row wrapper min-vh-100 justify-content-center align-items-center py-0 py-md-3">
+        <div id="book-appointment-wizard" class="col-12 col-lg-10 col-xl-8 col-xxl-7 bg-body overflow-hidden p-0 my-auto">
 
             <?php component('booking_header', [
                 'company_name' => vars('company_name'),
@@ -50,7 +50,11 @@
 
             <?php slot('content'); ?>
 
-            <?php component('booking_footer', ['display_login_button' => vars('display_login_button')]); ?>
+            <?php component('booking_footer', [
+                'display_login_button' => vars('display_login_button'),
+                'legal_notice_url' => vars('legal_notice_url'),
+                'imprint_url' => vars('imprint_url'),
+            ]); ?>
 
         </div>
     </div>
@@ -90,6 +94,9 @@
 <script src="<?= asset_url('assets/js/utils/string.js') ?>"></script>
 <script src="<?= asset_url('assets/js/utils/url.js') ?>"></script>
 <script src="<?= asset_url('assets/js/utils/validation.js') ?>"></script>
+<?php if (setting('altcha_enabled') === '1'): ?>
+<script src="<?= asset_url('assets/js/utils/altcha.js') ?>"></script>
+<?php endif; ?>
 <script src="<?= asset_url('assets/js/layouts/booking_layout.js') ?>"></script>
 <script src="<?= asset_url('assets/js/http/localization_http_client.js') ?>"></script>
 

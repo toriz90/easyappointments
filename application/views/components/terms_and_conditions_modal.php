@@ -7,7 +7,7 @@
 ?>
 
 <div id="terms-and-conditions-modal" class="modal fade">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-lg-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title"><?= lang('terms_and_conditions') ?></h4>
@@ -17,7 +17,7 @@
                 <?= pure_html($terms_and_conditions_content) ?>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                     <?= lang('close') ?>
                 </button>
             </div>

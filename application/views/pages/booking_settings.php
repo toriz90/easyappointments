@@ -2,17 +2,17 @@
 
 <?php section('content'); ?>
 
-<div id="booking-settings-page" class="container backend-page">
+<div id="booking-settings-page" class="container backend-page py-3">
     <div id="booking-settings">
         <div class="row">
-            <div class="col-sm-3 offset-sm-1">
+            <div class="col-sm-3">
                 <?php component('settings_nav'); ?>
             </div>
-            <div class="col-sm-6">
+            <div class="col-sm-9">
                 <form>
                     <fieldset>
                         <div class="d-flex justify-content-between align-items-center border-bottom mb-4 py-2">
-                            <h4 class="text-black-50 mb-0 fw-light">
+                            <h4 class="mb-0 fw-light">
                                 <?= lang('booking_settings') ?>
                             </h4>
 
@@ -24,7 +24,7 @@
                             <?php endif; ?>
                         </div>
 
-                        <h5 class="text-black-50 mb-3 fw-light">
+                        <h5 class="mb-3 fw-light">
                             <?= lang('fields') ?>
                         </h5>
 
@@ -246,15 +246,15 @@
                             </div>
                         </div>
 
-                        <h5 class="text-black-50 mb-3 fw-light">
+                        <h5 class="mb-3 fw-light">
                             <?= lang('custom_fields') ?>
                         </h5>
 
                         <div class="row mb-5 fields-row">
                             <?php for ($i = 1; $i <= 5; $i++): ?>
-                                <div class="col-sm-6">
+                                <div class="col-sm-9">
                                     <div class="form-group mb-5">
-                                        <label for="first-name" class="form-label">
+                                        <label for="custom-field-<?= $i ?>" class="form-label">
                                             <?= lang('custom_field') ?> #<?= $i ?>
                                             <span class="text-danger">*</span>
                                         </label>
@@ -290,7 +290,7 @@
                         </div>
 
 
-                        <h5 class="text-black-50 mb-3 fw-light">
+                        <h5 class="mb-3 fw-light">
                             <?= lang('options') ?>
                         </h5>
 
@@ -421,7 +421,6 @@
                             </div>
                         </div>
 
-                        <?php slot('after_primary_fields'); ?>
                     </fieldset>
                 </form>
             </div>

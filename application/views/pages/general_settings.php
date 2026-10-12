@@ -2,17 +2,17 @@
 
 <?php section('content'); ?>
 
-<div id="general-settings-page" class="container backend-page">
+<div id="general-settings-page" class="container backend-page py-3">
     <div id="general-settings">
         <div class="row">
-            <div class="col-sm-3 offset-sm-1">
+            <div class="col-sm-3">
                 <?php component('settings_nav'); ?>
             </div>
-            <div class="col-sm-6">
+            <div class="col-sm-9">
                 <form>
                     <fieldset>
                         <div class="d-flex justify-content-between align-items-center border-bottom mb-4 py-2">
-                            <h4 class="text-black-50 mb-0 fw-light">
+                            <h4 class="mb-0 fw-light">
                                 <?= lang('general_settings') ?>
                             </h4>
 
@@ -26,7 +26,7 @@
 
                         <div class="row mb-5">
                             <div class="col-12">
-                                <h5 class="text-black-50 mb-3 fw-light"><?= lang('company') ?></h5>
+                                <h5 class="mb-3 fw-light"><?= lang('company') ?></h5>
 
                                 <div class="mb-3">
                                     <label class="form-label" for="company-name">
@@ -98,7 +98,7 @@
 
                         <div class="row mb-5">
                             <div class="col-12">
-                                <h5 class="text-black-50 mb-3 fw-light"><?= lang('localization') ?></h5>
+                                <h5 class="mb-3 fw-light"><?= lang('localization') ?></h5>
 
                                 <div class="mb-3">
                                     <label class="form-label" for="date-format">
@@ -176,7 +176,7 @@
                                     </label>
                                     <?php component('timezone_dropdown', [
                                         'attributes' =>
-                                            'id="default-timezone" data-field="default_timezone" class="form-control required"',
+                                            'id="default-timezone" data-field="default_timezone" class="form-select required"',
                                         'grouped_timezones' => vars('grouped_timezones'),
                                     ]); ?>
                                 </div>
@@ -189,7 +189,6 @@
                             </div>
                         </div>
 
-                        <?php slot('after_primary_fields'); ?>
                     </fieldset>
                 </form>
             </div>

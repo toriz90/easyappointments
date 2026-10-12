@@ -2,10 +2,15 @@
 
 <?php section('content'); ?>
 
-<div class="container-fluid backend-page" id="service-categories-page">
+<div class="container backend-page py-3" id="service-categories-page">
 
     <div class="row" id="service-categories">
-        <div id="filter-service-categories" class="filter-records column col-12 col-md-5">
+        <div id="filter-service-categories" class="filter-records column col-12 mb-4">
+            <button id="add-service-category" class="btn btn-primary add-record-btn mb-4">
+                <i class="fas fa-plus-square me-2"></i>
+                <?= lang('add') ?>
+            </button>
+
             <form class="input-append mb-4">
                 <div class="input-group">
                     <input type="text" class="key form-control" aria-label="keyword">
@@ -17,31 +22,21 @@
                 </div>
             </form>
 
-            <h4 class="text-black-50 mb-3 fw-light">
+            <h4 class="mb-3 fw-light">
                 <?= lang('service_categories') ?>
             </h4>
 
-            <?php slot('after_page_title'); ?>
-
-            <div class="results">
+            <div class="results overflow-auto" style="max-height: 650px;">
                 <!-- JS -->
             </div>
         </div>
 
-        <div class="record-details col-12 col-md-5">
+        <div class="record-details col-12 mb-4">
             <div class="btn-toolbar mb-4">
                 <div class="add-edit-delete-group btn-group">
-                    <button id="add-service-category" class="btn btn-primary">
-                        <i class="fas fa-plus-square me-2"></i>
-                        <?= lang('add') ?>
-                    </button>
                     <button id="edit-service-category" class="btn btn-outline-secondary" disabled="disabled">
                         <i class="fas fa-edit me-2"></i>
                         <?= lang('edit') ?>
-                    </button>
-                    <button id="delete-service-category" class="btn btn-outline-secondary" disabled="disabled">
-                        <i class="fas fa-trash-alt me-2"></i>
-                        <?= lang('delete') ?>
                     </button>
                 </div>
 
@@ -50,15 +45,18 @@
                         <i class="fas fa-check-square me-2"></i>
                         <?= lang('save') ?>
                     </button>
-                    <button id="cancel-service-category" class="btn btn-secondary">
+                    <button id="cancel-service-category" class="btn btn-outline-secondary">
                         <?= lang('cancel') ?>
+                    </button>
+                    <button id="delete-service-category" class="btn btn-outline-danger ms-2">
+                        <i class="fas fa-trash-alt me-2"></i>
+                        <?= lang('delete') ?>
                     </button>
                 </div>
 
-                <?php slot('after_page_actions'); ?>
             </div>
 
-            <h4 class="text-black-50 mb-3 fw-light">
+            <h4 class="mb-3 fw-light">
                 <?= lang('details') ?>
             </h4>
 
@@ -81,7 +79,6 @@
                 <textarea id="description" rows="4" class="form-control" disabled></textarea>
             </div>
 
-            <?php slot('after_primary_fields'); ?>
         </div>
     </div>
 

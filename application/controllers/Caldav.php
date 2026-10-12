@@ -12,6 +12,7 @@
  * ---------------------------------------------------------------------------- */
 
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Jsvrcek\ICS\Exception\CalendarEventException;
 
 /**
@@ -45,6 +46,13 @@ class Caldav extends EA_Controller
     public function connect_to_server(): void
     {
         try {
+            method('post');
+
+            check('provider_id', 'numeric');
+            check('caldav_url', 'string');
+            check('caldav_username', 'string');
+            check('caldav_password', 'string');
+
             $provider_id = request('provider_id');
 
             $user_id = session('user_id');
@@ -72,9 +80,17 @@ class Caldav extends EA_Controller
                 'success' => true,
             ]);
         } catch (GuzzleException | InvalidArgumentException $e) {
+            log_message('error', 'CalDAV - Connection test failed: ' . $e->getMessage());
+
+            $message = lang('calendar_sync_failed');
+
+            if ($e instanceof RequestException && $e->hasResponse() && $e->getResponse()->getStatusCode() === 401) {
+                $message = lang('invalid_credentials_provided');
+            }
+
             json_response([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => $message,
             ]);
         } catch (Throwable $e) {
             json_exception($e);
@@ -94,204 +110,261 @@ class Caldav extends EA_Controller
      */
     public static function sync(string $provider_id): void
     {
-        /** @var EA_Controller $CI */
-        $CI = get_instance();
-
-        $CI->load->library('caldav_sync');
-
-        // Load the libraries as this method is called statically from the CLI command
-
-        $CI->load->model('appointments_model');
-        $CI->load->model('unavailabilities_model');
-        $CI->load->model('providers_model');
-        $CI->load->model('services_model');
-        $CI->load->model('customers_model');
-        $CI->load->model('settings_model');
-
-        $user_id = session('user_id');
-
-        if (!$user_id && !is_cli()) {
-            return;
-        }
-
-        if (empty($provider_id)) {
-            throw new InvalidArgumentException('No provider ID provided.');
-        }
-
-        $provider = $CI->providers_model->find($provider_id);
-
-        // Check whether the selected provider has the CalDAV Sync enabled.
-
-        if (!$provider['settings']['caldav_sync']) {
-            return; // The selected provider does not have the CalDAV Sync enabled.
-        }
-
-        // Fetch provider's appointments that belong to the sync time period.
-
-        $sync_past_days = $provider['settings']['sync_past_days'];
-
-        $sync_future_days = $provider['settings']['sync_future_days'];
-
-        $start_date_time_object = new DateTime('-' . $sync_past_days . ' days');
-        $start_date_time_object->setTime(0, 0);
-        $start_date_time = $start_date_time_object->format('Y-m-d H:i:s');
-
-        $end_date_time_object = new DateTime('+' . $sync_future_days . ' days');
-        $end_date_time_object->setTime(23, 59, 59);
-        $end_date_time = $end_date_time_object->format('Y-m-d H:i:s');
-
-        $where = [
-            'start_datetime >=' => $start_date_time,
-            'end_datetime <=' => $end_date_time,
-            'id_users_provider' => $provider['id'],
-        ];
-
-        $appointments = $CI->appointments_model->get($where);
-
-        $unavailabilities = $CI->unavailabilities_model->get($where);
-
-        $local_events = [...$appointments, ...$unavailabilities];
-
-        // Sync each appointment with CalDAV Calendar by following the project's sync protocol (see documentation).
-
-        foreach ($local_events as $local_event) {
-            if (str_contains((string) $local_event['id_caldav_calendar'], 'RECURRENCE')) {
-                continue;
-            }
-
-            if (!$local_event['is_unavailability']) {
-                $service = $CI->services_model->find($local_event['id_services']);
-                $customer = $CI->customers_model->find($local_event['id_users_customer']);
-                $events_model = $CI->appointments_model;
-            } else {
-                $service = null;
-                $customer = null;
-                $events_model = $CI->unavailabilities_model;
-            }
-
-            if (!$local_event['id_caldav_calendar']) {
-                if (!$local_event['is_unavailability']) {
-                    $caldav_event_id = $CI->caldav_sync->save_appointment($local_event, $service, $provider, $customer);
-                } else {
-                    $caldav_event_id = $CI->caldav_sync->save_unavailability($local_event, $provider);
-                }
-
-                $local_event['id_caldav_calendar'] = $caldav_event_id;
-
-                $events_model->save($local_event); // Save the CalDAV Calendar ID.
-
-                continue;
-            }
-
-            // Appointment is synced with CalDAV Calendar.
-
-            try {
-                $caldav_event = $CI->caldav_sync->get_event($provider, $local_event['id_caldav_calendar']);
-
-                if (!$caldav_event || $caldav_event['status'] === 'CANCELLED') {
-                    throw new Exception('Event is cancelled, remove the record from Easy!Appointments.');
-                }
-
-                // If CalDAV Calendar event is different from Easy!Appointments appointment then update Easy!Appointments record.
-                $local_event_start = strtotime($local_event['start_datetime']);
-                $local_event_end = strtotime($local_event['end_datetime']);
-
-                $caldav_event_start = new DateTime($caldav_event['start_datetime']);
-                $caldav_event_end = new DateTime($caldav_event['end_datetime']);
-
-                $is_different =
-                    $local_event_start !== $caldav_event_start->getTimestamp() ||
-                    $local_event_end !== $caldav_event_end->getTimestamp() ||
-                    $local_event['notes'] !== $caldav_event['description'];
-
-                if ($is_different) {
-                    $local_event['start_datetime'] = $caldav_event_start->format('Y-m-d H:i:s');
-                    $local_event['end_datetime'] = $caldav_event_end->format('Y-m-d H:i:s');
-                    $local_event['notes'] = $caldav_event['description'];
-                    $events_model->save($local_event);
-                }
-            } catch (Throwable) {
-                // Appointment not found on CalDAV Calendar, delete from Easy!Appointments.
-                $events_model->delete($local_event['id']);
-
-                $local_event['id_caldav_calendar'] = null;
-            }
-        }
-
-        // Add CalDAV Calendar events that do not exist in Easy!Appointments.
-
         try {
-            $caldav_events = $CI->caldav_sync->get_sync_events($provider, $start_date_time, $end_date_time);
-        } catch (Throwable $e) {
-            if ($e->getCode() === 404) {
-                log_message('error', 'CalDAV - Remote Calendar not found for provider ID: ' . $provider_id);
+            /** @var EA_Controller $CI */
+            $CI = get_instance();
 
-                return; // The remote calendar was not found.
-            } else {
-                throw $e;
-            }
-        }
+            $CI->load->library('caldav_sync');
 
-        $CI->appointments_model->delete_caldav_recurring_events($start_date_time, $end_date_time);
+            // Load the libraries as this method is called statically from the CLI command
 
-        foreach ($caldav_events as $caldav_event) {
-            if ($caldav_event['status'] === 'CANCELLED') {
-                continue;
-            }
+            $CI->load->model('appointments_model');
+            $CI->load->model('unavailabilities_model');
+            $CI->load->model('providers_model');
+            $CI->load->model('services_model');
+            $CI->load->model('customers_model');
+            $CI->load->model('settings_model');
 
-            if ($caldav_event['start_datetime'] === $caldav_event['end_datetime']) {
-                continue; // Cannot sync events with the same start and end date time value
+            $user_id = session('user_id');
+
+            if (!$user_id && !is_cli()) {
+                return;
             }
 
-            $appointment_results = $CI->appointments_model->get(['id_caldav_calendar' => $caldav_event['id']]);
-
-            if (!empty($appointment_results)) {
-                continue;
+            if (empty($provider_id)) {
+                throw new InvalidArgumentException('No provider ID provided.');
             }
 
-            $unavailability_results = $CI->unavailabilities_model->get([
-                'id_caldav_calendar' => $caldav_event['id'],
-            ]);
+            $provider = $CI->providers_model->find($provider_id);
 
-            if (!empty($unavailability_results)) {
-                continue;
+            // Check whether the selected provider has the CalDAV Sync enabled.
+
+            if (!$provider['settings']['caldav_sync']) {
+                return; // The selected provider does not have the CalDAV Sync enabled.
             }
 
-            $matching_unavailability = $CI->unavailabilities_model
-                ->query()
-                ->where([
-                    'start_datetime' => $caldav_event['start_datetime'],
-                    'end_datetime' => $caldav_event['end_datetime'],
-                    'notes' => $caldav_event['summary'] . ' ' . $caldav_event['description'],
-                    'id_users_provider' => $provider_id,
-                ])
-                ->get()
-                ->row_array();
+            // Fetch provider's appointments that belong to the sync time period.
 
-            if ($matching_unavailability) {
-                // Update the ID of the matching unavailability record.
-                $matching_unavailability['id_caldav_calendar'] = $caldav_event['id'];
-                $CI->unavailabilities_model->save($matching_unavailability);
-                continue;
-            }
+            $sync_past_days = $provider['settings']['sync_past_days'];
 
-            // Record doesn't exist in the Easy!Appointments, so add the event now.
+            $sync_future_days = $provider['settings']['sync_future_days'];
 
-            $local_event = [
-                'start_datetime' => $caldav_event['start_datetime'],
-                'end_datetime' => $caldav_event['end_datetime'],
-                'location' => $caldav_event['location'],
-                'notes' => $caldav_event['summary'] . ' ' . $caldav_event['description'],
-                'id_users_provider' => $provider_id,
-                'id_caldav_calendar' => $caldav_event['id'],
+            $start_date_time_object = new DateTime('-' . $sync_past_days . ' days');
+            $start_date_time_object->setTime(0, 0);
+            $start_date_time = $start_date_time_object->format('Y-m-d H:i:s');
+
+            $end_date_time_object = new DateTime('+' . $sync_future_days . ' days');
+            $end_date_time_object->setTime(23, 59, 59);
+            $end_date_time = $end_date_time_object->format('Y-m-d H:i:s');
+
+            $where = [
+                'start_datetime >=' => $start_date_time,
+                'end_datetime <=' => $end_date_time,
+                'id_users_provider' => $provider['id'],
             ];
 
-            $CI->unavailabilities_model->save($local_event);
-        }
+            $appointments = $CI->appointments_model->get($where);
 
-        json_response([
-            'success' => true,
-        ]);
+            $unavailabilities = $CI->unavailabilities_model->get($where);
+
+            $local_events = [...$appointments, ...$unavailabilities];
+
+            // Sync each appointment with CalDAV Calendar by following the project's sync protocol (see documentation).
+
+            foreach ($local_events as $local_event) {
+                if (str_contains((string) $local_event['id_caldav_calendar'], 'RECURRENCE')) {
+                    continue;
+                }
+
+                if (!$local_event['is_unavailability']) {
+                    $service = $CI->services_model->find($local_event['id_services']);
+                    $customer = $CI->customers_model->find($local_event['id_users_customer']);
+                    $events_model = $CI->appointments_model;
+                } else {
+                    $service = null;
+                    $customer = null;
+                    $events_model = $CI->unavailabilities_model;
+                }
+
+                if (!$local_event['id_caldav_calendar']) {
+                    if (!$local_event['is_unavailability']) {
+                        $caldav_event_id = $CI->caldav_sync->save_appointment($local_event, $service, $provider, $customer);
+                    } else {
+                        $caldav_event_id = $CI->caldav_sync->save_unavailability($local_event, $provider);
+                    }
+
+                    $local_event['id_caldav_calendar'] = $caldav_event_id;
+
+                    $events_model->save($local_event); // Save the CalDAV Calendar ID.
+
+                    continue;
+                }
+
+                // Appointment is synced with CalDAV Calendar.
+
+                try {
+                    $caldav_event = $CI->caldav_sync->get_event($provider, $local_event['id_caldav_calendar']);
+
+                    if (!$caldav_event || $caldav_event['status'] === 'CANCELLED') {
+                        throw new Exception('Event is cancelled, remove the record from Easy!Appointments.');
+                    }
+
+                    // If CalDAV Calendar event is different from Easy!Appointments appointment then update Easy!Appointments record.
+                    $local_event_start = strtotime($local_event['start_datetime']);
+                    $local_event_end = strtotime($local_event['end_datetime']);
+
+                    $caldav_event_start = new DateTime($caldav_event['start_datetime']);
+                    $caldav_event_end = new DateTime($caldav_event['end_datetime']);
+
+                    $is_different =
+                        $local_event_start !== $caldav_event_start->getTimestamp() ||
+                        $local_event_end !== $caldav_event_end->getTimestamp() ||
+                        $local_event['notes'] !== $caldav_event['description'];
+
+                    if ($is_different) {
+                        $local_event['start_datetime'] = $caldav_event_start->format('Y-m-d H:i:s');
+                        $local_event['end_datetime'] = $caldav_event_end->format('Y-m-d H:i:s');
+                        $local_event['notes'] = $caldav_event['description'];
+                        $events_model->save($local_event);
+                    }
+                } catch (GuzzleException $e) {
+                    // Authentication / connectivity errors must propagate up so the
+                    // user is notified — otherwise we would silently delete local
+                    // events when the remote server is just unreachable or rejecting
+                    // our credentials.
+                    throw $e;
+                } catch (Throwable) {
+                    // Appointment not found on CalDAV Calendar, delete from Easy!Appointments.
+                    $events_model->delete($local_event['id']);
+
+                    $local_event['id_caldav_calendar'] = null;
+                }
+            }
+
+            // Add CalDAV Calendar events that do not exist in Easy!Appointments.
+
+            try {
+                $caldav_events = $CI->caldav_sync->get_sync_events($provider, $start_date_time, $end_date_time);
+            } catch (Throwable $e) {
+                if ($e->getCode() === 404) {
+                    log_message('error', 'CalDAV - Remote Calendar not found for provider ID: ' . $provider_id);
+
+                    return; // The remote calendar was not found.
+                } else {
+                    throw $e;
+                }
+            }
+
+            $CI->appointments_model->delete_caldav_recurring_events($start_date_time, $end_date_time);
+
+            foreach ($caldav_events as $caldav_event) {
+                try {
+                    if ($caldav_event['status'] === 'CANCELLED') {
+                        continue;
+                    }
+
+                    if ($caldav_event['start_datetime'] === $caldav_event['end_datetime']) {
+                        continue; // Cannot sync events with the same start and end date time value
+                    }
+
+                    $appointment_results = $CI->appointments_model->get(['id_caldav_calendar' => $caldav_event['id']]);
+
+                    if (!empty($appointment_results)) {
+                        continue;
+                    }
+
+                    $unavailability_results = $CI->unavailabilities_model->get([
+                        'id_caldav_calendar' => $caldav_event['id'],
+                    ]);
+
+                    if (!empty($unavailability_results)) {
+                        continue;
+                    }
+
+                    $matching_unavailability = $CI->unavailabilities_model
+                        ->query()
+                        ->where([
+                            'start_datetime' => $caldav_event['start_datetime'],
+                            'end_datetime' => $caldav_event['end_datetime'],
+                            'notes' => $caldav_event['summary'] . ' ' . $caldav_event['description'],
+                            'id_users_provider' => $provider_id,
+                        ])
+                        ->get()
+                        ->row_array();
+
+                    if ($matching_unavailability) {
+                        // Update the ID of the matching unavailability record.
+                        $matching_unavailability['id_caldav_calendar'] = $caldav_event['id'];
+                        $CI->unavailabilities_model->save($matching_unavailability);
+                        continue;
+                    }
+
+                    // Record doesn't exist in the Easy!Appointments, so add the event now.
+
+                    $local_event = [
+                        'start_datetime' => $caldav_event['start_datetime'],
+                        'end_datetime' => $caldav_event['end_datetime'],
+                        'location' => $caldav_event['location'],
+                        'notes' => $caldav_event['summary'] . ' ' . $caldav_event['description'],
+                        'id_users_provider' => $provider_id,
+                        'id_caldav_calendar' => $caldav_event['id'],
+                    ];
+
+                    $CI->unavailabilities_model->save($local_event);
+                } catch (Throwable $e) {
+                    log_message(
+                        'error',
+                        'CalDAV sync: failed to import event '
+                            . ($caldav_event['id'] ?? 'unknown')
+                            . ': '
+                            . $e->getMessage(),
+                    );
+                }
+            }
+
+            json_response([
+                'success' => true,
+            ]);
+        } catch (GuzzleException $e) {
+            $status_code = 0;
+            $body = '';
+
+            if ($e instanceof RequestException && $e->hasResponse()) {
+                $status_code = $e->getResponse()->getStatusCode();
+                $body = (string) $e->getResponse()->getBody();
+            }
+
+            log_message(
+                'error',
+                'CalDAV - Sync failed (provider ID "' .
+                    $provider_id .
+                    '"): HTTP ' .
+                    $status_code .
+                    ' - ' .
+                    $e->getMessage() .
+                    ($body ? ' Body: ' . $body : ''),
+            );
+
+            $message = $status_code === 401 ? lang('invalid_credentials_provided') : $e->getMessage();
+
+            json_response(
+                [
+                    'success' => false,
+                    'message' => 'CalDAV Sync: ' . $message,
+                ],
+                $status_code === 401 ? 401 : 500,
+            );
+        } catch (Throwable $e) {
+            log_message(
+                'error',
+                'CalDAV - Sync completed with an error (provider ID "' . $provider_id . '"): ' . $e->getMessage(),
+            );
+
+            // Re-wrap so json_exception() prefixes the user-visible message with the
+            // "CalDAV Sync" label (untranslated, so the user knows the failure comes
+            // from the calendar synchronization and not from Easy!Appointments itself).
+            json_exception(new RuntimeException('CalDAV Sync: ' . $e->getMessage(), $e->getCode(), $e));
+        }
     }
 
     /**
@@ -304,6 +377,10 @@ class Caldav extends EA_Controller
     public function disable_provider_sync(): void
     {
         try {
+            method('post');
+
+            check('provider_id', 'numeric');
+
             $provider_id = request('provider_id');
 
             if (!$provider_id) {

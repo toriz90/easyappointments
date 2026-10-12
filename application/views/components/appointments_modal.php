@@ -16,7 +16,7 @@
  */
 ?>
 <div id="appointments-modal" class="modal fade">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-lg-down modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title"><?= lang('edit_appointment_title') ?></h3>
@@ -28,7 +28,7 @@
 
                 <form>
                     <fieldset>
-                        <h5 class="text-black-50 mb-3 fw-light"><?= lang('appointment_details_title') ?></h5>
+                        <h5 class="mb-3 fw-light"><?= lang('appointment_details_title') ?></h5>
 
                         <input id="appointment-id" type="hidden">
 
@@ -46,7 +46,7 @@
                                         $has_category = false;
 
                                         foreach ($available_services as $service) {
-                                            if (!empty($service['category_id'])) {
+                                            if (!empty($service['service_category_id'])) {
                                                 $has_category = true;
                                                 break;
                                             }
@@ -56,12 +56,12 @@
                                             $grouped_services = [];
 
                                             foreach ($available_services as $service) {
-                                                if (!empty($service['category_id'])) {
-                                                    if (!isset($grouped_services[$service['category_name']])) {
-                                                        $grouped_services[$service['category_name']] = [];
+                                                if (!empty($service['service_category_id'])) {
+                                                    if (!isset($grouped_services[$service['service_category_name']])) {
+                                                        $grouped_services[$service['service_category_name']] = [];
                                                     }
 
-                                                    $grouped_services[$service['category_name']][] = $service;
+                                                    $grouped_services[$service['service_category_name']][] = $service;
                                                 }
                                             }
 
@@ -70,7 +70,7 @@
                                             $grouped_services['uncategorized'] = [];
 
                                             foreach ($available_services as $service) {
-                                                if ($service['category_id'] == null) {
+                                                if ($service['service_category_id'] == null) {
                                                     $grouped_services['uncategorized'][] = $service;
                                                 }
                                             }
@@ -78,7 +78,7 @@
                                             foreach ($grouped_services as $key => $group) {
                                                 $group_label =
                                                     $key !== 'uncategorized'
-                                                        ? e($group[0]['category_name'])
+                                                        ? e($group[0]['service_category_name'])
                                                         : 'Uncategorized';
 
                                                 if (count($group) > 0) {
@@ -108,8 +108,6 @@
                                     </select>
                                 </div>
 
-                                <?php slot('after_select_appointment_service'); ?>
-
                                 <div class="mb-3">
                                     <label for="select-provider" class="form-label">
                                         <?= lang('provider') ?>
@@ -117,8 +115,6 @@
                                     </label>
                                     <select id="select-provider" class="required form-select"></select>
                                 </div>
-
-                                <?php slot('after_select_appointment_provider'); ?>
 
                                 <div class="mb-3">
                                     <?php component('color_selection', ['attributes' => 'id="appointment-color"']); ?>
@@ -129,6 +125,13 @@
                                         <?= lang('location') ?>
                                     </label>
                                     <input id="appointment-location" class="form-control">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="appointment-meeting-link" class="form-label">
+                                        <?= lang('meeting_link') ?>
+                                    </label>
+                                    <input id="appointment-meeting-link" class="form-control" placeholder="https://">
                                 </div>
 
                                 <div class="mb-3">
@@ -195,17 +198,14 @@
                                         : '' ?> form-control" rows="3"></textarea>
                                 </div>
 
-                                <?php slot('after_primary_appointment_fields'); ?>
                             </div>
                         </div>
                     </fieldset>
 
-                    <?php slot('after_appointment_details'); ?>
-
                     <br>
 
                     <fieldset>
-                        <h5 class="text-black-50 mb-3 fw-light">
+                        <h5 class="mb-3 fw-light">
                             <?= lang('customer_details_title') ?>
                             <button id="new-customer" class="btn btn-outline-secondary btn-sm" type="button"
                                     data-tippy-content="<?= lang('clear_fields_add_existing_customer_hint') ?>">
@@ -294,7 +294,6 @@
 
                                 <?php component('custom_fields'); ?>
 
-                                <?php slot('after_primary_customer_custom_fields'); ?>
                             </div>
                             <div class="col-12 col-sm-6">
                                 <div class="mb-3">
@@ -339,7 +338,7 @@
                                         <span class="text-danger" hidden>*</span>
                                     </label>
                                     <?php component('timezone_dropdown', [
-                                        'attributes' => 'id="timezone" class="form-control required"',
+                                        'attributes' => 'id="timezone" class="form-select required"',
                                         'grouped_timezones' => vars('grouped_timezones'),
                                     ]); ?>
                                 </div>
@@ -348,20 +347,17 @@
                                     <label for="customer-notes" class="form-label">
                                         <?= lang('notes') ?>
                                     </label>
-                                    <textarea id="customer-notes" rows="2" class="form-control"></textarea>
+                                    <textarea id="customer-notes" rows="3" class="form-control"></textarea>
                                 </div>
 
-                                <?php slot('after_primary_customer_fields'); ?>
                             </div>
                         </div>
                     </fieldset>
 
-                    <?php slot('after_customer_details'); ?>
                 </form>
             </div>
 
             <div class="modal-footer">
-                <?php slot('before_appointment_actions'); ?>
 
                 <a id="download-appointment-pdf" class="btn btn-outline-secondary me-auto d-none"
                    href="#" target="_blank" rel="noopener">
@@ -369,7 +365,7 @@
                     Descargar PDF
                 </a>
 
-                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
                     <?= lang('cancel') ?>
                 </button>
                 <button id="save-appointment" class="btn btn-primary">

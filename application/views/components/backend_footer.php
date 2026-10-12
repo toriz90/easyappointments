@@ -5,7 +5,7 @@
  * @var string $user_display_name
  */
 ?>
-<div id="footer" class="d-lg-flex justify-content-lg-start align-items-lg-center p-2 text-center text-lg-left mt-auto">
+<div id="footer" class="d-lg-flex justify-content-lg-start align-items-lg-center p-2 text-center text-lg-left mt-auto bg-body border-top" style="font-size: 11px;">
     <!-- Company/Brand info (customizable) -->
     <div class="mb-3 me-lg-5 mb-lg-0">
         <?php if (setting('company_name')): ?>

@@ -30,11 +30,40 @@
     <?php slot('styles'); ?>
 </head>
 <body>
-<div id="main" class="container">
-    <div class="row wrapper">
-        <div id="message-frame" class="col-12 border my-auto frame-container">
+<div id="main" class="container min-vh-100">
+    <div class="row wrapper min-vh-100 justify-content-center align-items-center py-3">
+        <div id="message-frame" class="col-12 col-md-8 col-lg-6 my-auto frame-container text-center bg-body rounded shadow p-4 p-md-5">
 
             <?php slot('content'); ?>
+
+            <?php if (vars('legal_notice_url') || vars('imprint_url') || vars('display_login_button')): ?>
+                <div class="mt-2">
+                    <small>
+                        <?php if (vars('legal_notice_url')): ?>
+                            <a href="<?= e(vars('legal_notice_url')) ?>" target="_blank"><?= lang('legal_notice') ?></a>
+                        <?php endif; ?>
+
+                        <?php if (vars('legal_notice_url') && vars('imprint_url')): ?>
+                            <span class="mx-1">|</span>
+                        <?php endif; ?>
+
+                        <?php if (vars('imprint_url')): ?>
+                            <a href="<?= e(vars('imprint_url')) ?>" target="_blank"><?= lang('imprint') ?></a>
+                        <?php endif; ?>
+                    </small>
+
+                    <?php if (vars('display_login_button')): ?>
+                        <div class="mt-3">
+                            <a class="backend-link badge bg-primary text-decoration-none px-2 d-inline-block p-1"
+                               href="<?= session('user_id') ? site_url('calendar') : site_url('login') ?>"
+                               style="min-width: 120px;">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                <?= session('user_id') ? lang('backend_section') : lang('login') ?>
+                            </a>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
 
         </div>
     </div>
