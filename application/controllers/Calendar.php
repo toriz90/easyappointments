@@ -241,6 +241,7 @@ class Calendar extends EA_Controller
                     return true;
                 }),
             );
+        }
 
         script_vars([
             'user_id' => $user_id,
