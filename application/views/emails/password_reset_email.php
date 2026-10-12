@@ -6,6 +6,7 @@
  * @var string $message
  * @var string $reset_link
  * @var array $settings
+ * @var string|null $company_logo_cid
  */
 
 $company_color = $settings['company_color'] ?? EMAIL_FALLBACK_COMPANY_COLOR;
@@ -382,12 +383,14 @@ $company_color = $settings['company_color'] ?? EMAIL_FALLBACK_COMPANY_COLOR;
                             <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="center" style="text-align: center;">
-                                        <?php if (!empty($settings['company_logo'])): ?>
-                                            <?php if (strpos($settings['company_logo'], 'data:image') === 0): ?>
-                                                <img src="<?= e($settings['company_logo']) ?>" alt="<?= e($settings['company_name'] ?? '') ?>" style="display:block;max-width:80px;margin: auto auto 24px;">
-                                            <?php else: ?>
-                                                <img src="<?= e(base_url('storage/uploads/' . $settings['company_logo'])) ?>" alt="<?= e($settings['company_name'] ?? '') ?>" style="display:block;max-width:80px;margin: auto auto 24px;">
-                                            <?php endif; ?>
+                                        <?php if (!empty($company_logo_cid)): ?>
+                                            <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin: 0 auto 24px;">
+                                                <tr>
+                                                    <td align="center" valign="middle" style="background-color: #1F2A37; border-radius: 16px; padding: 12px;">
+                                                        <img src="cid:<?= e($company_logo_cid) ?>" alt="<?= e($settings['company_name'] ?? '') ?>" height="64" style="display:block; height:64px; width:auto; max-width:160px; border-radius: 8px;">
+                                                    </td>
+                                                </tr>
+                                            </table>
                                         <?php else: ?>
                                             <strong style="font-size: 20px; display: inline-block; margin-bottom: 24px;">
                                                 <?= e($settings['company_name'] ?? '') ?>

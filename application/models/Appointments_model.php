@@ -852,9 +852,13 @@ class Appointments_model extends EA_Model
         }
 
         if (array_key_exists('customFields', $appointment)) {
+            // enforce_required: false - the REST API is used by external integrations (e.g. a
+            // chatbot) that may not have every custom field; names are still whitelisted and
+            // values still sanitized and run through mutual exclusion, same as any other caller.
             $decoded_resource['custom_fields'] = $this->encode_custom_fields(
                 $appointment['customFields'],
                 $decoded_resource['custom_fields'] ?? null,
+                false,
             );
         }
 
@@ -880,14 +884,25 @@ class Appointments_model extends EA_Model
      *  - Mutual exclusion is applied: if one of the exclusive fields has a real value,
      *    the others are forced to "N/A".
      *
-     * @param mixed       $submitted    The custom fields payload (must be array/object).
-     * @param string|null $existing_raw Existing custom_fields JSON (for partial updates).
+     * @param mixed       $submitted        The custom fields payload (must be array/object).
+     * @param string|null $existing_raw     Existing custom_fields JSON (for partial updates).
+     * @param bool        $enforce_required Whether to reject the payload if a field marked
+     *                                      `required` ends up without a value. Only the public
+     *                                      booking form (Booking.php) and the admin panel
+     *                                      (Calendar.php) pass true: those are the only two
+     *                                      surfaces that actually show the field and its
+     *                                      asterisk to the person filling it in. The REST API
+     *                                      (api_decode(), used by /api/v1/appointments) always
+     *                                      passes false, since external integrations (e.g. a
+     *                                      chatbot) may legitimately not have every field.
      *
      * @return string JSON string ready to be stored in the DB.
      *
-     * @throws InvalidArgumentException If the payload is not an array/object or contains unknown field names.
+     * @throws InvalidArgumentException If the payload is not an array/object, contains unknown
+     *                                   field names, or (when $enforce_required is true) is
+     *                                   missing a required field's value.
      */
-    public function encode_custom_fields(mixed $submitted, ?string $existing_raw): string
+    public function encode_custom_fields(mixed $submitted, ?string $existing_raw, bool $enforce_required = false): string
     {
         // Accept both arrays and objects from JSON body
         if (is_object($submitted)) {
@@ -968,6 +983,30 @@ class Appointments_model extends EA_Model
                         'label' => $cf['label'],
                         'value' => 'N/A',
                     ];
+                }
+            }
+        }
+
+        // Enforce `required` server-side, but only for the two surfaces that actually show the
+        // field to a person (see the $enforce_required docblock above). The browser already
+        // blocks submission when a required field is empty there, but that is bypassable
+        // (disabled JS, direct requests), so it must also be checked here. Checked against the
+        // FINAL merged state (existing values carried over from $existing_raw count too), not
+        // just what was just submitted, so an update that does not touch this field does not
+        // spuriously fail.
+        if ($enforce_required) {
+            foreach ($defined_fields as $cf) {
+                if (empty($cf['required'])) {
+                    continue;
+                }
+
+                $field_id = (string) $cf['id'];
+                $current_value = trim((string) ($internal[$field_id]['value'] ?? ''));
+
+                if ($current_value === '') {
+                    throw new InvalidArgumentException(
+                        'El campo personalizado "' . htmlspecialchars($cf['label'], ENT_QUOTES, 'UTF-8') . '" es obligatorio.',
+                    );
                 }
             }
         }

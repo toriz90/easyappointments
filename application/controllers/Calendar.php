@@ -342,9 +342,14 @@ class Calendar extends EA_Controller
 
                 $customer['id'] = $this->customers_model->save($customer);
 
-                // Encode custom fields as JSON to be stored per-appointment.
-                // For updates, preserve any existing values that the payload does not overwrite.
-                if (!empty($custom_fields_data)) {
+                // Encode custom fields as JSON to be stored per-appointment. For updates, preserve
+                // any existing values that the payload does not overwrite. A brand new appointment
+                // always goes through this (even with no custom field data submitted at all) so a
+                // required field cannot be bypassed by simply omitting it from the request; editing
+                // an existing appointment only re-encodes (and re-validates) when something was
+                // actually submitted, so untouched appointments are not retroactively blocked by a
+                // field that became required after they were created.
+                if (!empty($custom_fields_data) || empty($appointment_data['id'])) {
                     $existing_raw = null;
                     if (!empty($appointment_data['id'])) {
                         try {
@@ -358,6 +363,7 @@ class Calendar extends EA_Controller
                     $appointment_data['custom_fields'] = $this->appointments_model->encode_custom_fields(
                         $custom_fields_data,
                         $existing_raw,
+                        true, // enforce_required: the admin panel modal shows and marks required fields.
                     );
                 }
             }

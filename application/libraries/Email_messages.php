@@ -100,6 +100,11 @@ class Email_messages
         // Load custom fields for this appointment
         $custom_fields_data = $this->get_appointment_custom_fields($appointment);
 
+        // The logo must be embedded (and its CID known) before the view is rendered, since the
+        // template decides whether to reference `cid:company_logo` based on that result.
+        $php_mailer = $this->create_php_mailer();
+        $company_logo_cid = $this->embed_company_logo($php_mailer) ? 'company_logo' : null;
+
         $html = $this->CI->load->view(
             'emails/appointment_saved_email',
             [
@@ -113,11 +118,12 @@ class Email_messages
                 'timezone' => $timezone,
                 'appointment_link' => $appointment_link,
                 'custom_fields' => $custom_fields_data,
+                'company_logo_cid' => $company_logo_cid,
             ],
             true,
         );
 
-        $php_mailer = $this->get_php_mailer($recipient_email, $subject, $html);
+        $this->finalize_php_mailer($php_mailer, $recipient_email, $subject, $html);
 
         $php_mailer->addStringAttachment($ics_stream, 'invitation.ics', PHPMailer::ENCODING_BASE64, 'text/calendar');
 
@@ -193,6 +199,9 @@ class Email_messages
         // Load custom fields for this appointment
         $custom_fields_data = $this->get_appointment_custom_fields($appointment);
 
+        $php_mailer = $this->create_php_mailer();
+        $company_logo_cid = $this->embed_company_logo($php_mailer) ? 'company_logo' : null;
+
         $html = $this->CI->load->view(
             'emails/appointment_deleted_email',
             [
@@ -204,13 +213,14 @@ class Email_messages
                 'timezone' => $timezone,
                 'reason' => $reason,
                 'custom_fields' => $custom_fields_data,
+                'company_logo_cid' => $company_logo_cid,
             ],
             true,
         );
 
         $subject = lang('appointment_cancelled_title');
 
-        $php_mailer = $this->get_php_mailer($recipient_email, $subject, $html);
+        $this->finalize_php_mailer($php_mailer, $recipient_email, $subject, $html);
 
         $php_mailer->send();
     }
@@ -226,19 +236,23 @@ class Email_messages
      */
     public function send_password(string $password, string $recipient_email, array $settings): void
     {
+        $php_mailer = $this->create_php_mailer();
+        $company_logo_cid = $this->embed_company_logo($php_mailer) ? 'company_logo' : null;
+
         $html = $this->CI->load->view(
             'emails/account_recovery_email',
             [
                 'subject' => lang('new_account_password'),
                 'message' => str_replace('$password', '<strong>' . $password . '</strong>', lang('new_password_is')),
                 'settings' => $settings,
+                'company_logo_cid' => $company_logo_cid,
             ],
             true,
         );
 
         $subject = lang('new_account_password');
 
-        $php_mailer = $this->get_php_mailer($recipient_email, $subject, $html);
+        $this->finalize_php_mailer($php_mailer, $recipient_email, $subject, $html);
 
         $php_mailer->send();
     }
@@ -271,6 +285,9 @@ class Email_messages
      */
     public function send_password_reset_link(string $reset_link, string $recipient_email, array $settings): void
     {
+        $php_mailer = $this->create_php_mailer();
+        $company_logo_cid = $this->embed_company_logo($php_mailer) ? 'company_logo' : null;
+
         $html = $this->CI->load->view(
             'emails/password_reset_email',
             [
@@ -278,33 +295,33 @@ class Email_messages
                 'message' => lang('password_reset_email_message'),
                 'reset_link' => $reset_link,
                 'settings' => $settings,
+                'company_logo_cid' => $company_logo_cid,
             ],
             true,
         );
 
         $subject = lang('password_reset_request');
 
-        $php_mailer = $this->get_php_mailer($recipient_email, $subject, $html);
+        $this->finalize_php_mailer($php_mailer, $recipient_email, $subject, $html);
 
         $php_mailer->send();
     }
 
     /**
-     * Create PHP Mailer instance based on the email configuration.
+     * Create a PHP Mailer instance (SMTP transport + from/reply-to) with no recipient, subject,
+     * body or attachments set yet.
      *
-     * @param string|null $recipient_email
-     * @param string|null $subject
-     * @param string|null $html
+     * Split out from the former `get_php_mailer()` so callers that need to know whether the
+     * company logo got embedded (to decide what to render in the email template) can do so
+     * before rendering: create the mailer, call `embed_company_logo()`, render the view with
+     * that result, then call `finalize_php_mailer()` to attach the recipient/subject/body.
      *
      * @return PHPMailer
      *
      * @throws Exception
      */
-    private function get_php_mailer(
-        ?string $recipient_email = null,
-        ?string $subject = null,
-        ?string $html = null,
-    ): PHPMailer {
+    private function create_php_mailer(): PHPMailer
+    {
         $php_mailer = new PHPMailer(true);
 
         $php_mailer->CharSet = 'UTF-8';
@@ -328,6 +345,25 @@ class Email_messages
         $php_mailer->setFrom($from_address, $from_name);
         $php_mailer->addReplyTo($reply_to_address);
 
+        return $php_mailer;
+    }
+
+    /**
+     * Attach the recipient, subject and body to an already created PHP Mailer instance.
+     *
+     * @param PHPMailer $php_mailer Instance returned by `create_php_mailer()`.
+     * @param string|null $recipient_email
+     * @param string|null $subject
+     * @param string|null $html
+     *
+     * @return PHPMailer The same instance, for chaining.
+     */
+    private function finalize_php_mailer(
+        PHPMailer $php_mailer,
+        ?string $recipient_email = null,
+        ?string $subject = null,
+        ?string $html = null,
+    ): PHPMailer {
         if ($recipient_email) {
             $php_mailer->addAddress($recipient_email);
         }
@@ -349,9 +385,98 @@ class Email_messages
             $php_mailer->AltBody = $plain_text;
         }
 
-        $php_mailer->addEmbeddedImage(FCPATH . 'assets/img/logo.png', 'logo.png', 'logo.png', 'base64', 'image/png');
-
         return $php_mailer;
+    }
+
+    /**
+     * Create PHP Mailer instance based on the email configuration.
+     *
+     * Convenience wrapper around create_php_mailer() + embed_company_logo() +
+     * finalize_php_mailer() for simple callers that do not need to reference the logo's CID in
+     * their own view (e.g. send_test(), which renders no template at all).
+     *
+     * @param string|null $recipient_email
+     * @param string|null $subject
+     * @param string|null $html
+     *
+     * @return PHPMailer
+     *
+     * @throws Exception
+     */
+    private function get_php_mailer(
+        ?string $recipient_email = null,
+        ?string $subject = null,
+        ?string $html = null,
+    ): PHPMailer {
+        $php_mailer = $this->create_php_mailer();
+
+        $this->embed_company_logo($php_mailer);
+
+        return $this->finalize_php_mailer($php_mailer, $recipient_email, $subject, $html);
+    }
+
+    /**
+     * Embed the configured company logo as a CID image in the given PHPMailer instance.
+     *
+     * `setting('company_logo')` is either a `data:image/...;base64,...` string (uploaded and
+     * stored inline) or a filename living under `storage/uploads/`. Either way it is embedded as
+     * a CID attachment rather than referenced directly in the HTML, because Gmail strips `data:`
+     * URIs used as an `<img src>` and would otherwise show a broken image.
+     *
+     * Callers must check the return value (not a `$settings['company_logo']` array key, which is
+     * never guaranteed to be populated the same way the global `setting()` helper is) to decide
+     * whether to pass a `company_logo_cid` of `'company_logo'` or `null` into their email view;
+     * the template then renders `<img src="cid:company_logo">` only when it received a non-null
+     * value, falling back to the company name as text otherwise.
+     *
+     * @return bool True if the logo was embedded (the view may reference `cid:company_logo`),
+     *              false if there is no company logo configured or it could not be read.
+     */
+    private function embed_company_logo(PHPMailer $php_mailer): bool
+    {
+        $company_logo = setting('company_logo');
+
+        if (empty($company_logo)) {
+            return false;
+        }
+
+        $cid = 'company_logo';
+
+        if (str_starts_with($company_logo, 'data:image')) {
+            if (!preg_match('/^data:image\/([a-zA-Z0-9.+-]+);base64,(.+)$/', $company_logo, $matches)) {
+                return false;
+            }
+
+            [, $image_type, $base64_data] = $matches;
+
+            $image_data = base64_decode($base64_data, true);
+
+            if ($image_data === false) {
+                return false;
+            }
+
+            $php_mailer->addStringEmbeddedImage(
+                $image_data,
+                $cid,
+                'company_logo.' . $image_type,
+                PHPMailer::ENCODING_BASE64,
+                'image/' . $image_type,
+            );
+
+            return true;
+        }
+
+        $logo_path = FCPATH . 'storage/uploads/' . $company_logo;
+
+        if (!is_file($logo_path)) {
+            return false;
+        }
+
+        $mime_type = mime_content_type($logo_path) ?: 'image/png';
+
+        $php_mailer->addEmbeddedImage($logo_path, $cid, basename($logo_path), 'base64', $mime_type);
+
+        return true;
     }
 
     /**

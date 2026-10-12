@@ -19,6 +19,7 @@ App.Pages.CustomFields = (function () {
     const $id = $('#id');
     const $name = $('#name');
     const $label = $('#label');
+    const $placeholder = $('#placeholder');
     const $type = $('#type');
     const $required = $('#required');
     const $displayColumn = $('#display_column');
@@ -266,6 +267,7 @@ App.Pages.CustomFields = (function () {
         const customField = {
             name: $name.val(),
             label: $label.val(),
+            placeholder: $placeholder.val(),
             type: $type.val(),
             required: $required.prop('checked') ? 1 : 0,
             display_column: $displayColumn.prop('checked') ? 1 : 0,
@@ -407,6 +409,7 @@ App.Pages.CustomFields = (function () {
         $id.val(customField.id);
         $name.val(customField.name);
         $label.val(customField.label);
+        $placeholder.val(customField.placeholder || '');
         $type.val(customField.type);
         $required.prop('checked', Boolean(customField.required));
         $displayColumn.prop('checked', Boolean(customField.display_column));

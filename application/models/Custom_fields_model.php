@@ -38,6 +38,7 @@ class Custom_fields_model extends EA_Model
         'id' => 'id',
         'name' => 'name',
         'label' => 'label',
+        'placeholder' => 'placeholder',
         'type' => 'type',
         'required' => 'required',
         'displayColumn' => 'display_column',

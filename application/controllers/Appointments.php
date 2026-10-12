@@ -335,6 +335,7 @@ class Appointments extends EA_Controller
         $appointment['custom_fields'] = $this->appointments_model->encode_custom_fields(
             $custom_fields_data,
             $existing_raw,
+            true, // enforce_required: session-authenticated surface, not the external REST API.
         );
     }
 

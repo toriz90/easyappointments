@@ -5,6 +5,7 @@
  * @var string $subject
  * @var string $message
  * @var array $settings
+ * @var string|null $company_logo_cid
  */
 ?>
 <html lang="en">
@@ -15,16 +16,15 @@
 
 <div class="email-container" style="width: 650px; border: 1px solid #eee; margin: 30px auto;">
     <div id="header"
-         style="background-color: <?= $settings['company_color'] ?? EMAIL_FALLBACK_COMPANY_COLOR ?>; height: 80px; padding: 15px; text-align: center;">
-        <?php if (!empty($settings['company_logo'])): ?>
-            <?php if (strpos($settings['company_logo'], 'data:image') === 0): ?>
-                <img src="<?= $settings['company_logo'] ?>" alt="<?= e($settings['company_name']) ?>"
-                     style="max-height: 50px; max-width: 300px; vertical-align: middle;">
-            <?php else: ?>
-                <img src="<?= base_url('storage/uploads/' . $settings['company_logo']) ?>"
-                     alt="<?= e($settings['company_name']) ?>"
-                     style="max-height: 50px; max-width: 300px; vertical-align: middle;">
-            <?php endif; ?>
+         style="background-color: <?= $settings['company_color'] ?? EMAIL_FALLBACK_COMPANY_COLOR ?>; padding: 15px; text-align: center;">
+        <?php if (!empty($company_logo_cid)): ?>
+            <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                <tr>
+                    <td align="center" valign="middle" style="background-color: #1F2A37; border-radius: 16px; padding: 12px;">
+                        <img src="cid:<?= e($company_logo_cid) ?>" alt="<?= e($settings['company_name']) ?>" height="64" style="display:block; height:64px; width:auto; max-width:160px; border-radius: 8px;">
+                    </td>
+                </tr>
+            </table>
         <?php else: ?>
             <strong id="logo" style="color: white; font-size: 20px; margin-top: 10px; display: inline-block">
                 <?= e($settings['company_name']) ?>

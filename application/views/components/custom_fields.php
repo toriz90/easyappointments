@@ -26,6 +26,7 @@ $custom_fields = $custom_fields ?? []; ?>
                        data-field-label="<?= e($custom_field['label']) ?>"
                        class="custom-field-input <?= $custom_field['required'] ? 'required' : '' ?> form-control"
                        maxlength="255"
+                       <?php if (!empty($custom_field['placeholder'])): ?>placeholder="<?= e($custom_field['placeholder']) ?>"<?php endif; ?>
                        <?= $disabled ? 'disabled' : '' ?>/>
 
             <?php elseif ($custom_field['type'] === 'textarea'): ?>
@@ -36,6 +37,7 @@ $custom_fields = $custom_fields ?? []; ?>
                     class="custom-field-input <?= $custom_field['required'] ? 'required' : '' ?> form-control"
                     rows="3"
                     maxlength="500"
+                    <?php if (!empty($custom_field['placeholder'])): ?>placeholder="<?= e($custom_field['placeholder']) ?>"<?php endif; ?>
                     <?= $disabled ? 'disabled' : '' ?>></textarea>
 
             <?php elseif ($custom_field['type'] === 'select' && !empty($custom_field['options'])): ?>

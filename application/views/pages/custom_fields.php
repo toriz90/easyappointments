@@ -94,6 +94,18 @@
             </div>
 
             <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label for="placeholder" class="form-label">
+                        <?= lang('placeholder') ?>
+                    </label>
+                    <input type="text" id="placeholder" class="form-control" maxlength="500">
+                    <small class="form-text text-muted">
+                        <?= lang('placeholder_hint') ?>
+                    </small>
+                </div>
+            </div>
+
+            <div class="row">
                 <div class="col-md-6 mb-3">
                     <label for="type" class="form-label">
                         <?= lang('type') ?>

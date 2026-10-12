@@ -676,12 +676,22 @@ class Booking extends EA_Controller
             $customer_id = $this->customers_model->save($customer);
             $customer = $this->customers_model->find($customer_id);
 
-            // Encode custom fields as JSON to be stored per-appointment.
-            // The model centralizes whitelist validation, sanitization and mutual exclusion logic.
-            if (!empty($custom_fields_data)) {
+            // Encode custom fields as JSON to be stored per-appointment. The model centralizes
+            // whitelist validation, sanitization, mutual exclusion and "required" enforcement.
+            // A new booking always goes through this (even with no data submitted at all) so a
+            // required field cannot be bypassed by simply omitting it from the request. On
+            // reschedule (manage_mode) the form does not resubmit custom fields, so they are left
+            // untouched unless the request actually includes some - same policy already used for
+            // the accessories commitment, which is not asked again when rescheduling either.
+            if (!$manage_mode || !empty($custom_fields_data)) {
+                $existing_custom_fields_raw = ($manage_mode && isset($original_appointment))
+                    ? ($original_appointment['custom_fields'] ?? null)
+                    : null;
+
                 $appointment['custom_fields'] = $this->appointments_model->encode_custom_fields(
                     $custom_fields_data,
-                    null,
+                    $existing_custom_fields_raw,
+                    true, // enforce_required: the public booking form shows and marks required fields.
                 );
             }
 
