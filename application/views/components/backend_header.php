@@ -15,8 +15,6 @@
             <?php else: ?>
                 <img src="<?= base_url('storage/uploads/' . setting('company_logo')) ?>" alt="<?= e(setting('company_name') ?: 'Logo') ?>" class="float-start me-2" style="width: 45px; height: 45px;">
             <?php endif; ?>
-        <?php else: ?>
-            <img src="<?= base_url('assets/img/logo.png') ?>" alt="logo" class="float-start me-2" style="width: 45px; height: 45px;">
         <?php endif; ?>
         <h6 class="mb-1 mt-1 fw-bold text-white" style="font-size: 15px;"><?= e(strtoupper(setting('company_name') ?: 'EASY!APPOINTMENTS')) ?></h6>
         <small class="d-block text-white-50" style="font-size: 12px;"><?= e(setting('company_tagline') ?: 'Online Appointment Scheduler') ?></small>

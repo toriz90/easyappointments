@@ -8,8 +8,15 @@
 
 <div id="header" class="overflow-hidden p-3 p-md-4 d-flex flex-column flex-lg-row align-items-center bg-primary">
     <div id="company-name" class="d-block d-md-inline-block float-md-start text-center text-md-start text-white fs-4 fw-light my-3 my-md-0 mw-100 flex-grow-1" style="min-width: 0; line-height: 1.4;">
-        <img src="<?= vars('company_logo') ?: base_url('assets/img/logo.png') ?>" alt="logo" id="company-logo" 
-             class="d-block d-md-inline-block mx-auto mx-md-0 float-md-start me-md-3 mb-3 mb-md-0" style="max-height: 56px;">
+        <?php if (vars('company_logo')): ?>
+            <?php if (strpos(vars('company_logo'), 'data:image') === 0): ?>
+                <img src="<?= vars('company_logo') ?>" alt="<?= e($company_name) ?>" id="company-logo"
+                     class="d-block d-md-inline-block mx-auto mx-md-0 float-md-start me-md-3 mb-3 mb-md-0" style="max-height: 56px;">
+            <?php else: ?>
+                <img src="<?= base_url('storage/uploads/' . vars('company_logo')) ?>" alt="<?= e($company_name) ?>" id="company-logo"
+                     class="d-block d-md-inline-block mx-auto mx-md-0 float-md-start me-md-3 mb-3 mb-md-0" style="max-height: 56px;">
+            <?php endif; ?>
+        <?php endif; ?>
 
         <span>
             <?= e($company_name) ?>

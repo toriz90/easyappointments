@@ -12,6 +12,11 @@
  *   on-brand = #3D2C00   border   = #E2E5E9
  * ---------------------------------------------------------------------------- */
 
+// Importado solo para tomar $primary (el color real del botón primario) sin
+// duplicar el hex a mano. El resto de este archivo sigue usando $hw-* porque
+// se compila de forma independiente (fuera del bundle de Bootstrap).
+@import 'themes/honeywhale-brand';
+
 $hw-primary:        #1F2A37;
 $hw-primary-soft:   #9AA3AF; // tagline / texto secundario sobre dark
 $hw-brand:          #F5B301;
@@ -304,4 +309,16 @@ body .modal-header .close {
     #book-appointment-wizard .booking-card-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* === CUENTA — logo (login, recovery, password-reset, logout) ============= */
+
+/* El logo de empresa suele venir en blanco con fondo transparente; sin una
+   base oscura se pierde sobre la tarjeta blanca del layout de cuenta. */
+.account-logo {
+    display: inline-block;
+    background-color: $primary;
+    padding: 12px;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }

@@ -12,6 +12,14 @@
  *   primary  = #1F2A37   brand    = #F5B301   body-bg = #F4F5F7
  *   on-brand = #3D2C00   border   = #E2E5E9
  * ---------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------
+ * Easy!Appointments - Honey Whale brand palette (Fase 1)
+ *
+ * Override de variables base de Bootstrap. Este partial DEBE importarse antes
+ * que node_modules/bootstrap/scss/bootstrap; en SASS las variables se resuelven
+ * en orden de declaracion, asi que los valores definidos aqui ganan frente a
+ * los `!default` de Bootstrap y de los temas Bootswatch.
+ * ---------------------------------------------------------------------------- */
 /* === BOOKING PUBLICO ====================================================== */
 /* Header oscuro con tagline gris claro */
 #book-appointment-wizard #header {
@@ -272,4 +280,14 @@ body .modal-header .close {
   #book-appointment-wizard .booking-card-grid {
     grid-template-columns: 1fr;
   }
+}
+/* === CUENTA — logo (login, recovery, password-reset, logout) ============= */
+/* El logo de empresa suele venir en blanco con fondo transparente; sin una
+   base oscura se pierde sobre la tarjeta blanca del layout de cuenta. */
+.account-logo {
+  display: inline-block;
+  background-color: #1F2A37;
+  padding: 12px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }

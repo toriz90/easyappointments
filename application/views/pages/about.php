@@ -12,8 +12,6 @@
                 <?php else: ?>
                     <img src="<?= base_url('storage/uploads/' . setting('company_logo')) ?>" alt="<?= e(setting('company_name')) ?>" class="mb-5" style="max-width: 200px;">
                 <?php endif; ?>
-            <?php else: ?>
-                <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo" class="mb-5">
             <?php endif; ?>
 
             <h3>

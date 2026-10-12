@@ -3,8 +3,13 @@
 <?php section('content'); ?>
 
 <div class="text-center mb-4">
-    <img src="<?= asset_url('assets/img/logo.png') ?>" 
-         alt="Easy!Appointments" class="shadow mb-3" width="72" height="72">
+    <?php if (setting('company_logo')): ?>
+        <?php if (strpos(setting('company_logo'), 'data:image') === 0): ?>
+            <img src="<?= setting('company_logo') ?>" alt="<?= e(setting('company_name') ?: 'Logo') ?>" class="shadow mb-3 account-logo" width="72" height="72">
+        <?php else: ?>
+            <img src="<?= base_url('storage/uploads/' . setting('company_logo')) ?>" alt="<?= e(setting('company_name') ?: 'Logo') ?>" class="shadow mb-3 account-logo" width="72" height="72">
+        <?php endif; ?>
+    <?php endif; ?>
     <h4 class="text-primary fw-semibold mb-1"><?= lang('backend_section') ?></h4>
     <p class=" small mb-0"><?= lang('you_need_to_login') ?></p>
 </div>
