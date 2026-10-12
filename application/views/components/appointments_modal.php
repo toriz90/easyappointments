@@ -198,6 +198,11 @@
                                         : '' ?> form-control" rows="3"></textarea>
                                 </div>
 
+                                <div class="mb-3" id="accessories-commitment-info" hidden>
+                                    <label class="form-label"><?= lang('accessories_commitment_label') ?></label>
+                                    <div class="form-control-plaintext text-muted py-0" id="accessories-commitment-text"></div>
+                                </div>
+
                             </div>
                         </div>
                     </fieldset>

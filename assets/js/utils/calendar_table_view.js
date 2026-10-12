@@ -246,6 +246,22 @@ App.Utils.CalendarTableView = (function () {
         $appointmentsModal.find('#appointment-status').val(appointment.status);
         $appointmentsModal.find('#appointment-notes').val(appointment.notes);
         App.Components.ColorSelection.setColor($appointmentsModal.find('#appointment-color'), appointment.color);
+
+        // Accessories commitment: read-only, only shown when the customer accepted it (new
+        // bookings only — rescheduling from the panel never sets or requires this).
+        if (appointment.accessories_commitment_at) {
+            const formatted = App.Utils.Date.format(
+                appointment.accessories_commitment_at,
+                vars('date_format'),
+                vars('time_format'),
+                true,
+            );
+            $appointmentsModal.find('#accessories-commitment-text').text('Aceptado el ' + formatted);
+            $appointmentsModal.find('#accessories-commitment-info').prop('hidden', false);
+        } else {
+            $appointmentsModal.find('#accessories-commitment-info').prop('hidden', true);
+        }
+
         $appointmentsModal.modal('show');
     }
 

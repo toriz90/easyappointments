@@ -102,7 +102,7 @@ App.Pages.AppointmentsManagement = (function () {
     function renderRows(rows) {
         if (!rows.length) {
             $tbody.html(
-                '<tr><td colspan="8" class="text-center text-muted py-4">' +
+                '<tr><td colspan="9" class="text-center text-muted py-4">' +
                 'No hay citas que coincidan con los filtros.' +
                 '</td></tr>',
             );
@@ -128,6 +128,7 @@ App.Pages.AppointmentsManagement = (function () {
                     `<td data-label="Teléfono">${escapeHtml(row.customer_phone) || '<span class="text-muted">—</span>'}</td>` +
                     `<td data-label="Centro">${escapeHtml(row.service_name) || '<span class="text-muted">—</span>'}</td>` +
                     `<td data-label="Equipo">${escapeHtml(row.equipment) || '<span class="text-muted">—</span>'}</td>` +
+                    `<td data-label="Motivo">${renderTruncated(row.motivo, 60)}</td>` +
                     `<td data-label="Estado" class="status-cell">${renderStatusBadge(row.status)}</td>` +
                     `<td data-label="Acciones" class="actions-cell text-end">${renderActionsMenu(row)}</td>` +
                     '</tr>'
@@ -241,6 +242,22 @@ App.Pages.AppointmentsManagement = (function () {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+    }
+
+    /**
+     * Render a cell value truncated to `maxLength` characters, with the full text shown in a
+     * native browser tooltip (`title` attribute) when it was actually truncated.
+     */
+    function renderTruncated(value, maxLength) {
+        const text = (value || '').trim();
+
+        if (!text) {
+            return '<span class="text-muted">—</span>';
+        }
+
+        const truncated = text.length > maxLength ? text.slice(0, maxLength).trimEnd() + '…' : text;
+
+        return `<span title="${escapeHtml(text)}">${escapeHtml(truncated)}</span>`;
     }
 
     function updatePagination() {
@@ -385,7 +402,7 @@ App.Pages.AppointmentsManagement = (function () {
 
     function load() {
         $tbody.html(
-            '<tr><td colspan="8" class="text-center text-muted py-4">' +
+            '<tr><td colspan="9" class="text-center text-muted py-4">' +
             '<i class="fas fa-spinner fa-spin me-2"></i>Cargando…' +
             '</td></tr>',
         );
@@ -410,7 +427,7 @@ App.Pages.AppointmentsManagement = (function () {
             .done((response) => {
                 if (!response || !Array.isArray(response.data)) {
                     $tbody.html(
-                        '<tr><td colspan="8" class="text-center text-danger py-4">' +
+                        '<tr><td colspan="9" class="text-center text-danger py-4">' +
                         'Respuesta inesperada del servidor.' +
                         '</td></tr>',
                     );
@@ -432,7 +449,7 @@ App.Pages.AppointmentsManagement = (function () {
                     (jqXHR.responseJSON && jqXHR.responseJSON.message) ||
                     'Error al cargar las citas.';
                 $tbody.html(
-                    `<tr><td colspan="8" class="text-center text-danger py-4">${escapeHtml(msg)}</td></tr>`,
+                    `<tr><td colspan="9" class="text-center text-danger py-4">${escapeHtml(msg)}</td></tr>`,
                 );
             });
     }

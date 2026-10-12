@@ -56,6 +56,7 @@ class Booking extends EA_Controller
         'id_users_customer',
         'id_services',
         'custom_fields',
+        'accessories_commitment_at',
     ];
 
     /**
@@ -493,6 +494,14 @@ class Booking extends EA_Controller
             // only round-trips through $customer because that is how the client sends it.
             $custom_fields_data = $customer['custom_fields_data'] ?? [];
 
+            // Same reasoning for the accessories commitment checkbox: the client sends an
+            // "accepted" flag (not a DB column, so it is not in $allowed_appointment_fields)
+            // which the whitelist filter below would otherwise silently strip before we read it.
+            $accessories_commitment_accepted = filter_var(
+                $appointment['accessories_commitment_accepted'] ?? false,
+                FILTER_VALIDATE_BOOLEAN,
+            );
+
             // Sanitize customer fields - only allow expected fields
             $customer = array_intersect_key($customer, array_flip($this->allowed_customer_fields));
 
@@ -542,6 +551,17 @@ class Booking extends EA_Controller
                 ) {
                     throw new RuntimeException('No es posible cambiar el proveedor al reagendar.');
                 }
+            }
+
+            // New bookings must explicitly accept the accessories commitment before the
+            // appointment is registered; rescheduling an existing appointment does not ask for
+            // it again (the checkbox is not shown to the customer in that mode either).
+            if (!$manage_mode) {
+                if (!$accessories_commitment_accepted) {
+                    throw new InvalidArgumentException(lang('accessories_commitment_required'));
+                }
+
+                $appointment['accessories_commitment_at'] = date('Y-m-d H:i:s');
             }
 
             // Check appointment availability before registering it to the database.

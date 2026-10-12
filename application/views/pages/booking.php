@@ -16,6 +16,12 @@
     'display_delete_personal_information' => vars('display_delete_personal_information'),
 ]); ?>
 
+<!-- Accessories Reminder Popup (new bookings only, never on reschedule) -->
+
+<?php if (!vars('manage_mode')): ?>
+    <?php component('accessories_popup_modal'); ?>
+<?php endif; ?>
+
 <!-- Select Service & Provider -->
 
 <?php component('booking_type_step', ['available_services' => vars('available_services')]); ?>

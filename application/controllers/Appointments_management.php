@@ -279,7 +279,14 @@ class Appointments_management extends EA_Controller
                 'customer_name' => $full_name,
                 'customer_phone' => $customer['phone_number'] ?? '',
                 'service_name' => $service['name'] ?? '',
-                'equipment' => $this->extract_equipment_label($row['custom_fields'] ?? null),
+                'equipment' => $this->appointments_model->find_custom_field_value(
+                    $row['custom_fields'] ?? null,
+                    ['Modelo del equipo'],
+                ),
+                'motivo' => $this->appointments_model->find_custom_field_value(
+                    $row['custom_fields'] ?? null,
+                    ['Motivo de servicio', 'Detalles'],
+                ),
                 'status' => $row['status'] ?? '',
             ];
         }
@@ -620,6 +627,7 @@ class Appointments_management extends EA_Controller
             'Teléfono',
             'Centro de servicio',
             'Equipo',
+            'Motivo',
             'Estado',
         ], ',', '"', '');
 
@@ -634,6 +642,7 @@ class Appointments_management extends EA_Controller
                 $row['customer_phone'],
                 $row['service_name'],
                 $row['equipment'],
+                $row['motivo'],
                 $row['status'],
             ], ',', '"', '');
         }
@@ -645,25 +654,4 @@ class Appointments_management extends EA_Controller
         $this->output->set_output($csv);
     }
 
-    /**
-     * Pull the value of the "Modelo del equipo" custom field from the per-appointment
-     * JSON snapshot. Returns an empty string if the field is missing.
-     */
-    private function extract_equipment_label(?string $raw): string
-    {
-        if (empty($raw)) {
-            return '';
-        }
-
-        $decoded = $this->appointments_model->decode_custom_fields($raw);
-        $target = mb_strtolower('Modelo del equipo');
-
-        foreach ((array) $decoded as $label => $value) {
-            if (mb_strtolower(trim((string) $label)) === $target) {
-                return (string) $value;
-            }
-        }
-
-        return '';
-    }
 }

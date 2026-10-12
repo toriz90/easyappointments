@@ -82,10 +82,32 @@ $show_center_column = empty($center_name);
         table.agenda td {
             font-size: 9pt;
             padding: 5px 8px;
-            border: 1px solid #d4d4d4;
+            border-left: 1px solid #d4d4d4;
+            border-right: 1px solid #d4d4d4;
+            border-top: 1px solid #d4d4d4;
+            border-bottom: 1px solid #d4d4d4;
             vertical-align: top;
         }
-        table.agenda tr.alt td { background-color: #f7f7f7; }
+        table.agenda tbody.alt td { background-color: #f7f7f7; }
+
+        /* Each appointment is one visual block, even when it spans two <tr>s (the
+           appointment row + its optional "Motivo" row): no divider between them, the
+           dividing line appears only once, after the last row of the block. Grouping each
+           block in its own <tbody> also lets dompdf keep it together across page breaks. */
+        table.agenda tbody.appt-group {
+            page-break-inside: avoid;
+        }
+        table.agenda tr.appt-row td {
+            border-bottom: none;
+        }
+        table.agenda tr.appt-row.no-motivo td {
+            border-bottom: 1px solid #d4d4d4;
+        }
+        table.agenda tr.motivo-row td {
+            border-top: none;
+            font-size: 8.5pt;
+            color: #4a4a4a;
+        }
 
         .folio-cell {
             font-family: 'DejaVu Sans Mono', monospace;
@@ -189,16 +211,18 @@ $show_center_column = empty($center_name);
                     <th style="width: 11%;">Estado</th>
                 </tr>
             </thead>
-            <tbody>
-                <?php foreach ($rows as $i => $row):
-                    $dt = $row['start_datetime'] ? new DateTime($row['start_datetime']) : null;
-                    $date_label = $dt ? $dt->format('d/m/Y') . ' · ' . $dt->format('H:i') : '—';
-                    $status_class = strtolower(strtr((string) $row['status'], [
-                        'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ñ' => 'n',
-                        ' ' => '-',
-                    ]));
-                ?>
-                <tr<?= $i % 2 ? ' class="alt"' : '' ?>>
+            <?php $colspan = $show_center_column ? 7 : 6; ?>
+            <?php foreach ($rows as $i => $row):
+                $dt = $row['start_datetime'] ? new DateTime($row['start_datetime']) : null;
+                $date_label = $dt ? $dt->format('d/m/Y') . ' · ' . $dt->format('H:i') : '—';
+                $status_class = strtolower(strtr((string) $row['status'], [
+                    'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ñ' => 'n',
+                    ' ' => '-',
+                ]));
+                $motivo = trim((string) ($row['motivo'] ?? ''));
+            ?>
+            <tbody class="appt-group<?= $i % 2 ? ' alt' : '' ?>">
+                <tr class="appt-row<?= $motivo === '' ? ' no-motivo' : '' ?>">
                     <td class="folio-cell"><?= e($row['folio'] ?: '—') ?></td>
                     <td class="time-cell"><?= e($date_label) ?></td>
                     <td><?= e($row['customer_name'] ?: '—') ?></td>
@@ -215,8 +239,13 @@ $show_center_column = empty($center_name);
                         <?php endif; ?>
                     </td>
                 </tr>
-                <?php endforeach; ?>
+                <?php if ($motivo !== ''): ?>
+                    <tr class="motivo-row">
+                        <td colspan="<?= $colspan ?>">Motivo: <?= nl2br(e($motivo)) ?></td>
+                    </tr>
+                <?php endif; ?>
             </tbody>
+            <?php endforeach; ?>
         </table>
     <?php endif; ?>
 

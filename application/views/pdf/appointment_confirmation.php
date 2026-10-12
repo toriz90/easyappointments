@@ -11,6 +11,7 @@
  * @var string $email
  * @var string $equipo
  * @var string $motivo
+ * @var string|null $compromiso_accesorios
  */
 ?><!DOCTYPE html>
 <html lang="es">
@@ -240,6 +241,12 @@
                 <td class="k">Motivo de servicio</td>
                 <td class="v"><?= e($motivo) ?></td>
             </tr>
+            <?php if (!empty($compromiso_accesorios)): ?>
+                <tr>
+                    <td class="k">Compromiso de accesorios</td>
+                    <td class="v"><?= e($compromiso_accesorios) ?></td>
+                </tr>
+            <?php endif; ?>
         </table>
 
         <!-- Recomendaciones -->

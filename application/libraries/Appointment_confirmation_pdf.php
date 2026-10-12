@@ -98,6 +98,12 @@ class Appointment_confirmation_pdf
         $last_name = trim((string) ($customer['last_name'] ?? ''));
         $full_name = trim($first_name . ' ' . $last_name);
 
+        $custom_fields_raw = $appointment['custom_fields'] ?? null;
+
+        $accessories_commitment_at = !empty($appointment['accessories_commitment_at'])
+            ? new DateTime($appointment['accessories_commitment_at'])
+            : null;
+
         return [
             'folio'           => $this->value_or_dash($appointment['folio'] ?? null, $dash),
             'sucursal'        => $this->value_or_dash($service['name'] ?? null, $dash),
@@ -107,13 +113,20 @@ class Appointment_confirmation_pdf
             'telefono'        => $this->value_or_dash($customer['phone_number'] ?? null, $dash),
             'email'           => $this->value_or_dash($customer['email'] ?? null, $dash),
             'equipo'          => $this->value_or_dash(
-                $this->extract_custom_field($appointment, 'Modelo del equipo'),
+                $this->CI->appointments_model->find_custom_field_value($custom_fields_raw, ['Modelo del equipo']),
                 $dash,
             ),
             'motivo'          => $this->value_or_dash(
-                $this->extract_custom_field($appointment, 'Detalles'),
+                $this->CI->appointments_model->find_custom_field_value(
+                    $custom_fields_raw,
+                    ['Motivo de servicio', 'Detalles'],
+                ),
                 $dash,
             ),
+            'compromiso_accesorios' => $accessories_commitment_at
+                ? 'Aceptado el ' . $this->format_date_es($accessories_commitment_at) . ', ' .
+                    $this->format_time_es($accessories_commitment_at)
+                : null,
         ];
     }
 
@@ -148,33 +161,6 @@ class Appointment_confirmation_pdf
         $suffix = $dt->format('A') === 'AM' ? 'a.m.' : 'p.m.';
 
         return $hour . ':' . $minute . ' ' . $suffix;
-    }
-
-    /**
-     * Read a custom field value from the appointment's JSON snapshot, looked up by label.
-     *
-     * Returns an empty string if the appointment has no custom_fields JSON or the label is
-     * not present. Comparison is case-insensitive and trim-tolerant.
-     */
-    protected function extract_custom_field(array $appointment, string $label): string
-    {
-        $raw = $appointment['custom_fields'] ?? null;
-
-        if (empty($raw) || !is_string($raw)) {
-            return '';
-        }
-
-        $decoded = $this->CI->appointments_model->decode_custom_fields($raw);
-
-        $target = mb_strtolower(trim($label));
-
-        foreach ((array) $decoded as $field_label => $field_value) {
-            if (mb_strtolower(trim((string) $field_label)) === $target) {
-                return (string) $field_value;
-            }
-        }
-
-        return '';
     }
 
     /**

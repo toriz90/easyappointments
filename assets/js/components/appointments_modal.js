@@ -650,6 +650,10 @@ App.Components.AppointmentsModal = (function () {
         // modal is opened in edit mode (see calendar_default_view.js / calendar_table_view.js).
         $appointmentsModal.find('#download-appointment-pdf').addClass('d-none').attr('href', '#');
 
+        // Hide the read-only accessories commitment info by default; populateAppointmentModal()
+        // re-shows it only when editing an appointment that actually accepted it.
+        $appointmentsModal.find('#accessories-commitment-info').prop('hidden', true);
+
         const defaultStatusValue = $appointmentStatus.find('option:first').val();
         $appointmentStatus.val(defaultStatusValue);
 

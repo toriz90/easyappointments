@@ -281,6 +281,56 @@ body .modal-header .close {
     grid-template-columns: 1fr;
   }
 }
+/* === BOOKING — popup de recordatorio de accesorios ======================== */
+#accessories-popup-modal .modal-dialog {
+  width: fit-content;
+  max-width: 92vw;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#accessories-popup-modal .modal-content {
+  width: fit-content;
+  max-width: 100%;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+#accessories-popup-modal .accessories-popup-image {
+  display: block;
+  width: min(92vw, 50.625vh);
+  height: min(90vh, 163.5555555556vw);
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+#accessories-popup-modal .accessories-popup-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  background-color: rgba(255, 255, 255, 0.95);
+  background-position: center;
+  background-size: 1rem;
+  border-radius: 50%;
+  opacity: 1;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+#accessories-popup-modal .accessories-popup-close:hover,
+#accessories-popup-modal .accessories-popup-close:focus {
+  background-color: #F5B301;
+}
+
 /* === CUENTA — logo (login, recovery, password-reset, logout) ============= */
 /* El logo de empresa suele venir en blanco con fondo transparente; sin una
    base oscura se pierde sobre la tarjeta blanca del layout de cuenta. */

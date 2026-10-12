@@ -311,6 +311,65 @@ body .modal-header .close {
     }
 }
 
+/* === BOOKING — popup de recordatorio de accesorios ======================== */
+
+// Note: do NOT set `display` on .modal-dialog — Bootstrap's own `.modal-dialog-centered`
+// rule sets `display: flex` there for vertical centering, and this selector's higher
+// specificity (#id .class vs .class) would silently override it, breaking centering.
+#accessories-popup-modal .modal-dialog {
+    width: fit-content;
+    max-width: 92vw;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#accessories-popup-modal .modal-content {
+    width: fit-content;
+    max-width: 100%;
+    background: transparent;
+    border: 0;
+    border-radius: 12px;
+    box-shadow: none;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+// Width/height both derived from the same 9:16 source ratio, each capped by its own
+// viewport axis (92vw / 90vh) and `min()`-ed against the other axis' equivalent — so the
+// rendered box is always "whichever of the two constraints is smaller", with no need to
+// special-case portrait vs. landscape viewports. object-fit is a safety net in case of
+// sub-pixel rounding between the two calc()s, never actually cropping at a true 9:16 ratio.
+#accessories-popup-modal .accessories-popup-image {
+    display: block;
+    width: min(92vw, calc(90vh * 9 / 16));
+    height: min(90vh, calc(92vw * 16 / 9));
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+#accessories-popup-modal .accessories-popup-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin: 0;
+    background-color: rgba(255, 255, 255, 0.95);
+    background-position: center;
+    background-size: 1rem;
+    border-radius: 50%;
+    opacity: 1;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+#accessories-popup-modal .accessories-popup-close:hover,
+#accessories-popup-modal .accessories-popup-close:focus {
+    background-color: $hw-brand;
+}
+
 /* === CUENTA — logo (login, recovery, password-reset, logout) ============= */
 
 /* El logo de empresa suele venir en blanco con fondo transparente; sin una

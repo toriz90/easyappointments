@@ -161,6 +161,16 @@
                         <?= lang('remember_me_hint') ?>
                     </div>
                 </div>
+
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox" id="accessories-commitment" class="required form-check-input">
+                        <label for="accessories-commitment" class="form-check-label">
+                            <?= lang('accessories_commitment') ?>
+                            <span class="text-danger">*</span>
+                        </label>
+                    </div>
+                </div>
                 <?php endif; ?>
 
                 <?php slot('info_second_column'); ?>

@@ -213,13 +213,14 @@
                             <th>Teléfono</th>
                             <th>Centro de servicio</th>
                             <th>Equipo</th>
+                            <th>Motivo</th>
                             <th>Estado</th>
                             <th class="text-end" style="width: 1%;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">
+                            <td colspan="9" class="text-center text-muted py-4">
                                 Cargando…
                             </td>
                         </tr>

@@ -281,6 +281,9 @@ App.Pages.Booking = (function () {
 
             // Initialize remember me after prefilling from query params
             initializeRememberMe();
+
+            // Show the accessories reminder popup (new bookings only; see pages/booking.php).
+            initializeAccessoriesPopup();
         }
     }
 
@@ -800,8 +803,16 @@ App.Pages.Booking = (function () {
 
         $('.required').each((index, requiredField) => {
             const $field = $(requiredField);
-            // Skip validation for disabled fields (e.g., mutually exclusive fields)
-            if (!$field.prop('disabled') && !$field.val()) {
+
+            if ($field.is(':disabled')) {
+                return; // Skip validation for disabled fields (e.g., mutually exclusive fields).
+            }
+
+            // Checkboxes (e.g. the accessories commitment) are "empty" when unchecked, not when
+            // .val() is falsy: an unchecked checkbox still reports its `value` attribute.
+            const isEmpty = $field.is(':checkbox') ? !$field.prop('checked') : !$field.val();
+
+            if (isEmpty) {
                 $field.addClass('is-invalid');
                 missingRequiredField = true;
             }
@@ -1033,6 +1044,7 @@ App.Pages.Booking = (function () {
             is_unavailability: false,
             id_users_provider: $selectProvider.val(),
             id_services: $selectService.val(),
+            accessories_commitment_accepted: $('#accessories-commitment').prop('checked') || false,
         };
 
         data.manage_mode = Number(manageMode);
@@ -1346,6 +1358,79 @@ App.Pages.Booking = (function () {
                 saveCustomerInfo();
             }
         });
+    }
+
+    /**
+     * Show the accessories reminder popup, following a per-browser frequency rule so it does
+     * not become annoying on repeat visits:
+     *
+     * - Shown at most once per browser session (sessionStorage).
+     * - Skipped entirely while paused (localStorage `pausedUntil` is in the future).
+     * - Shown unconditionally the first time (counter === 0), then with 50% odds afterwards.
+     * - Each time it is closed, the counter increments; reaching 3 pauses it for 7 days and
+     *   resets the counter back to 0.
+     *
+     * Wrapped in try/catch: if storage is unavailable (private browsing, blocked, etc.) the
+     * popup is simply never shown, rather than risk breaking the booking page.
+     */
+    function initializeAccessoriesPopup() {
+        const SESSION_KEY = 'EasyAppointments.AccessoriesPopup.ShownThisSession';
+        const STORAGE_KEY = 'EasyAppointments.AccessoriesPopup';
+        const PAUSE_AFTER_CLOSES = 3;
+        const PAUSE_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+        const $modal = $('#accessories-popup-modal');
+
+        if (!$modal.length) {
+            return;
+        }
+
+        try {
+            if (sessionStorage.getItem(SESSION_KEY)) {
+                return;
+            }
+
+            const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+            const counter = Number(state.counter) || 0;
+            const pausedUntil = Number(state.pausedUntil) || 0;
+
+            if (pausedUntil > Date.now()) {
+                return;
+            }
+
+            const shouldShow = counter === 0 || Math.random() < 0.5;
+
+            if (!shouldShow) {
+                return;
+            }
+
+            sessionStorage.setItem(SESSION_KEY, '1');
+
+            $modal.one('hidden.bs.modal', () => {
+                try {
+                    const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+                    let nextCounter = (Number(current.counter) || 0) + 1;
+                    let nextPausedUntil = Number(current.pausedUntil) || 0;
+
+                    if (nextCounter >= PAUSE_AFTER_CLOSES) {
+                        nextPausedUntil = Date.now() + PAUSE_DURATION_MS;
+                        nextCounter = 0;
+                    }
+
+                    localStorage.setItem(
+                        STORAGE_KEY,
+                        JSON.stringify({counter: nextCounter, pausedUntil: nextPausedUntil}),
+                    );
+                } catch (e) {
+                    // Storage unavailable: nothing to persist, next page load tries again.
+                }
+            });
+
+            $modal.modal('show');
+        } catch (e) {
+            // Storage blocked/unavailable: never show the popup rather than risk a crash.
+        }
     }
 
     document.addEventListener('DOMContentLoaded', initialize);

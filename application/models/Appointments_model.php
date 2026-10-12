@@ -752,6 +752,40 @@ class Appointments_model extends EA_Model
     }
 
     /**
+     * Look up a single custom field's value from an appointment's `custom_fields` JSON
+     * snapshot, by label. Single source of truth for "find me the value of custom field X"
+     * across the confirmation PDF, the appointments management list/export, etc. — do not
+     * re-implement this lookup locally.
+     *
+     * Accepts multiple candidate labels, checked in order, so a field whose label was renamed
+     * (see e.g. migration 077, "Detalles" -> "Motivo de servicio") still resolves correctly for
+     * appointments booked before the rename, whose JSON snapshot still carries the old label.
+     *
+     * Comparison is case-insensitive and trim-tolerant, matching `decode_custom_fields()`.
+     *
+     * @param string|null $raw Raw `ea_appointments.custom_fields` JSON.
+     * @param string[] $labels Candidate labels to match, checked in order.
+     *
+     * @return string The matched value, or '' if no candidate label is present.
+     */
+    public function find_custom_field_value(?string $raw, array $labels): string
+    {
+        $decoded = $this->decode_custom_fields($raw);
+
+        foreach ($labels as $label) {
+            $target = mb_strtolower(trim($label));
+
+            foreach ((array) $decoded as $field_label => $value) {
+                if (mb_strtolower(trim((string) $field_label)) === $target) {
+                    return (string) $value;
+                }
+            }
+        }
+
+        return '';
+    }
+
+    /**
      * Convert the API resource to the equivalent database appointment record.
      *
      * @param array $appointment API resource.
