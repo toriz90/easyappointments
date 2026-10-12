@@ -488,6 +488,11 @@ class Booking extends EA_Controller
                 throw new InvalidArgumentException('Invalid email address format.');
             }
 
+            // Extract custom fields data BEFORE the whitelist filter below strips it: it is not a
+            // column of ea_customers (hence intentionally absent from $allowed_customer_fields), it
+            // only round-trips through $customer because that is how the client sends it.
+            $custom_fields_data = $customer['custom_fields_data'] ?? [];
+
             // Sanitize customer fields - only allow expected fields
             $customer = array_intersect_key($customer, array_flip($this->allowed_customer_fields));
 
@@ -645,9 +650,6 @@ class Booking extends EA_Controller
 
             // Save customer language (the language which is used to render the booking page).
             $customer['language'] = session('language') ?? config('language');
-
-            // Extract custom fields data before filtering
-            $custom_fields_data = $customer['custom_fields_data'] ?? [];
 
             $this->customers_model->only($customer, $this->allowed_customer_fields);
 
