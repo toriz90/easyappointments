@@ -364,6 +364,7 @@ class Calendar extends EA_Controller
                         $custom_fields_data,
                         $existing_raw,
                         true, // enforce_required: the admin panel modal shows and marks required fields.
+                        true, // is_backend: skip fields that are required only on the public side.
                     );
                 }
             }

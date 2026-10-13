@@ -26,6 +26,7 @@ class Custom_fields_model extends EA_Model
     protected array $casts = [
         'id' => 'integer',
         'required' => 'boolean',
+        'required_in_backend' => 'boolean',
         'display_column' => 'boolean',
         'sort_order' => 'integer',
         'active' => 'boolean',
@@ -41,6 +42,7 @@ class Custom_fields_model extends EA_Model
         'placeholder' => 'placeholder',
         'type' => 'type',
         'required' => 'required',
+        'requiredInBackend' => 'required_in_backend',
         'displayColumn' => 'display_column',
         'sortOrder' => 'sort_order',
         'active' => 'active',

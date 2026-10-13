@@ -895,6 +895,13 @@ class Appointments_model extends EA_Model
      *                                      (api_decode(), used by /api/v1/appointments) always
      *                                      passes false, since external integrations (e.g. a
      *                                      chatbot) may legitimately not have every field.
+     * @param bool        $is_backend       Only meaningful when $enforce_required is true: a
+     *                                      field marked `required` but NOT `required_in_backend`
+     *                                      is skipped when this is true. Lets a field be
+     *                                      mandatory for customers (Booking.php, $is_backend
+     *                                      false) without ever blocking staff from
+     *                                      creating/editing an appointment from the panel
+     *                                      (Calendar.php, $is_backend true).
      *
      * @return string JSON string ready to be stored in the DB.
      *
@@ -902,8 +909,12 @@ class Appointments_model extends EA_Model
      *                                   field names, or (when $enforce_required is true) is
      *                                   missing a required field's value.
      */
-    public function encode_custom_fields(mixed $submitted, ?string $existing_raw, bool $enforce_required = false): string
-    {
+    public function encode_custom_fields(
+        mixed $submitted,
+        ?string $existing_raw,
+        bool $enforce_required = false,
+        bool $is_backend = false,
+    ): string {
         // Accept both arrays and objects from JSON body
         if (is_object($submitted)) {
             $submitted = (array) $submitted;
@@ -997,6 +1008,10 @@ class Appointments_model extends EA_Model
         if ($enforce_required) {
             foreach ($defined_fields as $cf) {
                 if (empty($cf['required'])) {
+                    continue;
+                }
+
+                if ($is_backend && empty($cf['required_in_backend'] ?? true)) {
                     continue;
                 }
 

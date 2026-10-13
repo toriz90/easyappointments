@@ -87,7 +87,7 @@
                 $leftColumnFields = array_filter($custom_fields ?? [], function($field) {
                     return ($field['column_position'] ?? 'left') === 'left';
                 });
-                component('custom_fields', ['custom_fields' => $leftColumnFields]);
+                component('custom_fields', ['custom_fields' => $leftColumnFields, 'is_public' => true]);
                 ?>
 
             </div>
@@ -146,7 +146,7 @@
                 $rightColumnFields = array_filter($custom_fields ?? [], function($field) {
                     return ($field['column_position'] ?? 'left') === 'right';
                 });
-                component('custom_fields', ['custom_fields' => $rightColumnFields]);
+                component('custom_fields', ['custom_fields' => $rightColumnFields, 'is_public' => true]);
                 ?>
 
                 <?php if (!vars('manage_mode')): ?>

@@ -336,6 +336,7 @@ class Appointments extends EA_Controller
             $custom_fields_data,
             $existing_raw,
             true, // enforce_required: session-authenticated surface, not the external REST API.
+            true, // is_backend: staff-facing (gated by PRIV_APPOINTMENTS), not the public booking form.
         );
     }
 

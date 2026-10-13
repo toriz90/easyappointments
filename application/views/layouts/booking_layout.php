@@ -4,11 +4,11 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <meta name="theme-color" content="#35A768">
+    <meta name="theme-color" content="#1F2A37">
     <meta name="google" content="notranslate">
 
     <meta property="og:title" content="<?= lang('page_title') . ' ' . e(vars('company_name')) ?>"/>
-    <meta property="og:description" content="Book Your Appointment With A Few Clicks"/>
+    <meta property="og:description" content="Agenda tu cita en el Centro de Servicio Honey Whale"/>
     <meta property="og:url" content="<?= base_url() ?>">
     <meta property="og:image" content="<?= base_url('assets/img/social-card.png') ?>"/>
     <meta property="og:type" content="website">

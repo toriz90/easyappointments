@@ -465,6 +465,7 @@ $lang['add_option'] = 'Add Option';
 $lang['options'] = 'Options';
 $lang['dropdown'] = 'Dropdown';
 $lang['display_in_customer_list'] = 'Display in Customer List';
+$lang['required_in_backend'] = 'Also required in the backend';
 $lang['value'] = 'Value';
 $lang['webhook_saved'] = 'Webhook saved successfully.';
 $lang['webhook_deleted'] = 'Webhook deleted successfully.';

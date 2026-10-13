@@ -22,6 +22,8 @@ App.Pages.CustomFields = (function () {
     const $placeholder = $('#placeholder');
     const $type = $('#type');
     const $required = $('#required');
+    const $requiredInBackendGroup = $('#required-in-backend-group');
+    const $requiredInBackend = $('#required_in_backend');
     const $displayColumn = $('#display_column');
     const $active = $('#active');
     const $columnPosition = $('#column-position');
@@ -135,6 +137,16 @@ App.Pages.CustomFields = (function () {
             if (id) {
                 select(id, true);
             }
+        });
+
+        /**
+         * Event: Required Checkbox "Change"
+         *
+         * "Also required in the backend" only makes sense (and is only shown) when the field is
+         * required at all - a field that is optional everywhere has nothing extra to toggle.
+         */
+        $required.on('change', function () {
+            $requiredInBackendGroup.toggle($(this).prop('checked'));
         });
 
         /**
@@ -270,6 +282,7 @@ App.Pages.CustomFields = (function () {
             placeholder: $placeholder.val(),
             type: $type.val(),
             required: $required.prop('checked') ? 1 : 0,
+            required_in_backend: $requiredInBackend.prop('checked') ? 1 : 0,
             display_column: $displayColumn.prop('checked') ? 1 : 0,
             active: $active.prop('checked') ? 1 : 0,
             column_position: $columnPosition.val(),
@@ -380,6 +393,7 @@ App.Pages.CustomFields = (function () {
 
         $optionsSection.hide();
         $optionsList.empty();
+        $requiredInBackendGroup.hide();
     }
 
     /**
@@ -412,6 +426,8 @@ App.Pages.CustomFields = (function () {
         $placeholder.val(customField.placeholder || '');
         $type.val(customField.type);
         $required.prop('checked', Boolean(customField.required));
+        $requiredInBackend.prop('checked', customField.required_in_backend === undefined || Boolean(customField.required_in_backend));
+        $requiredInBackendGroup.toggle(Boolean(customField.required));
         $displayColumn.prop('checked', Boolean(customField.display_column));
         $active.prop('checked', Boolean(customField.active));
         $columnPosition.val(customField.column_position || 'left');

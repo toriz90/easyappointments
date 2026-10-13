@@ -128,6 +128,15 @@
                         </div>
                     </div>
 
+                    <div class="mb-3" id="required-in-backend-group" style="display:none;">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="required_in_backend" checked>
+                            <label class="form-check-label" for="required_in_backend">
+                                <?= lang('required_in_backend') ?>
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="display_column">

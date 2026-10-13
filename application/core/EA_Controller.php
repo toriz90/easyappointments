@@ -162,6 +162,11 @@ class EA_Controller extends CI_Controller
             'csrf_token' => $this->security->get_csrf_hash(),
             'language' => config('language'),
             'language_code' => config('language_code'),
+            // Used by app.js's global ajax error handler as the message box title, so it shows
+            // the business's own name instead of the product's. Guarded the same way as
+            // configure_timezone() above: the settings table does not exist yet during a fresh
+            // install, before the first migration runs.
+            'company_name' => $this->db->table_exists('settings') ? setting('company_name') : null,
         ]);
     }
 

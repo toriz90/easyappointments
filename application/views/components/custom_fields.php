@@ -4,17 +4,26 @@
  *
  * @var bool $disabled (false)
  * @var array $custom_fields
+ * @var bool $is_public (false) Whether this is the public booking form. A field marked
+ *                       `required` is only actually enforced (asterisk, .required class,
+ *                       browser validation) in the admin panel when it is ALSO marked
+ *                       `required_in_backend` - a field can be mandatory for customers without
+ *                       ever blocking staff from creating/editing an appointment.
  */
 
 $disabled = $disabled ?? false;
+$is_public = $is_public ?? false;
 $custom_fields = $custom_fields ?? []; ?>
 
 <?php foreach ($custom_fields as $custom_field): ?>
-    <?php if ($custom_field['active']): ?>
+    <?php if ($custom_field['active']):
+        $is_required = $custom_field['required']
+            && ($is_public || ($custom_field['required_in_backend'] ?? true));
+    ?>
         <div class="mb-3">
             <label for="custom-field-<?= $custom_field['id'] ?>" class="form-label">
                 <?= e($custom_field['label']) ?>
-                <?php if ($custom_field['required']): ?>
+                <?php if ($is_required): ?>
                     <span class="text-danger" <?= $disabled ? 'hidden' : '' ?>>*</span>
                 <?php endif; ?>
             </label>
@@ -24,7 +33,7 @@ $custom_fields = $custom_fields ?? []; ?>
                        id="custom-field-<?= $custom_field['id'] ?>"
                        data-field-name="<?= e($custom_field['name']) ?>"
                        data-field-label="<?= e($custom_field['label']) ?>"
-                       class="custom-field-input <?= $custom_field['required'] ? 'required' : '' ?> form-control"
+                       class="custom-field-input <?= $is_required ? 'required' : '' ?> form-control"
                        maxlength="255"
                        <?php if (!empty($custom_field['placeholder'])): ?>placeholder="<?= e($custom_field['placeholder']) ?>"<?php endif; ?>
                        <?= $disabled ? 'disabled' : '' ?>/>
@@ -34,7 +43,7 @@ $custom_fields = $custom_fields ?? []; ?>
                     id="custom-field-<?= $custom_field['id'] ?>"
                     data-field-name="<?= e($custom_field['name']) ?>"
                     data-field-label="<?= e($custom_field['label']) ?>"
-                    class="custom-field-input <?= $custom_field['required'] ? 'required' : '' ?> form-control"
+                    class="custom-field-input <?= $is_required ? 'required' : '' ?> form-control"
                     rows="3"
                     maxlength="500"
                     <?php if (!empty($custom_field['placeholder'])): ?>placeholder="<?= e($custom_field['placeholder']) ?>"<?php endif; ?>
@@ -45,7 +54,7 @@ $custom_fields = $custom_fields ?? []; ?>
                     id="custom-field-<?= $custom_field['id'] ?>"
                     data-field-name="<?= e($custom_field['name']) ?>"
                     data-field-label="<?= e($custom_field['label']) ?>"
-                    class="custom-field-input <?= $custom_field['required'] ? 'required' : '' ?> form-control"
+                    class="custom-field-input <?= $is_required ? 'required' : '' ?> form-control"
                     autocomplete="off"
                     <?= $disabled ? 'disabled' : '' ?>>
                     <option value=""><?= lang('select') ?></option>
