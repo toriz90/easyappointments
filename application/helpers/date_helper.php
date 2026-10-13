@@ -142,6 +142,50 @@ if (!function_exists('format_date_time')) {
     }
 }
 
+if (!function_exists('earliest_bookable_datetime')) {
+    /**
+     * The earliest moment a NEW appointment (or a reschedule's new date) may start, per the
+     * `minimum_advance_booking` setting.
+     *
+     * Counted in calendar days, not a rolling "N minutes/hours from now" window: midnight of
+     * (today + minimum_advance_booking days), where "today" is taken in the business's own
+     * timezone (`default_timezone` setting), not the provider's timezone nor the customer's
+     * browser clock. This is what makes the rule immune to time-of-day: whether "now" is 08:00
+     * or 21:00, the result for the same calendar day is identical.
+     *
+     * Any available hour of the returned day (or later) is bookable. If that day turns out to be
+     * closed, the day-level availability scan in Booking::get_unavailable_dates() already walks
+     * forward to the next working day on its own - this helper does not need to know about
+     * working plans or Sundays.
+     *
+     * @param DateTime|null $now Inject a fixed "now" for testing; defaults to the real current
+     *                           time. If given in a different timezone, it is converted to the
+     *                           business timezone first.
+     *
+     * @return DateTime Midnight, in the business timezone, of (today + minimum_advance_booking days).
+     *
+     * @throws Exception
+     */
+    function earliest_bookable_datetime(?DateTime $now = null): DateTime
+    {
+        $business_timezone = new DateTimeZone(setting('default_timezone') ?: 'America/Mexico_City');
+
+        $now = $now !== null ? clone $now : new DateTime('now', $business_timezone);
+
+        $now->setTimezone($business_timezone);
+
+        $minimum_advance_booking = (int) setting('minimum_advance_booking', 0);
+
+        $earliest = clone $now;
+
+        $earliest->setTime(0, 0, 0);
+
+        $earliest->modify('+' . $minimum_advance_booking . ' days');
+
+        return $earliest;
+    }
+}
+
 if (!function_exists('format_timezone')) {
     /**
      * Format a timezone string based on the current app settings.

@@ -14,6 +14,8 @@
     'manage_mode' => vars('manage_mode'),
     'appointment_data' => vars('appointment_data'),
     'display_delete_personal_information' => vars('display_delete_personal_information'),
+    'can_cancel' => vars('can_cancel'),
+    'cancellation_cutoff_hours' => vars('cancellation_cutoff_hours'),
 ]); ?>
 
 <!-- Accessories Reminder Popup (new bookings only, never on reschedule) -->

@@ -571,11 +571,13 @@ class Availability
     }
 
     /**
-     * Consider the book advance timeout and remove available hours that have passed the threshold.
+     * Consider the minimum advance booking rule and remove available hours before its threshold.
      *
-     * If the selected date is today, remove past hours. It is important  include the timeout before booking
-     * that is set in the back-office the system. Normally we might want the customer to book an appointment
-     * that is at least half or one hour from now. The setting is stored in minutes.
+     * The threshold is `earliest_bookable_datetime()`: midnight, in the business's own timezone,
+     * of (today + minimum_advance_booking days) - a fixed calendar-day boundary, not a rolling
+     * "now + N minutes" window (that used to make the rule's outcome depend on what time of day
+     * the customer happened to load the page). Any hour on or after that day is kept; everything
+     * before it - including the remainder of "today" - is removed.
      *
      * @param string $date The selected date.
      * @param array $available_hours Already generated available hours.
@@ -589,17 +591,12 @@ class Availability
     {
         $provider_timezone = new DateTimeZone($provider['timezone']);
 
-        $book_advance_timeout = setting('book_advance_timeout', 0);
-        $book_advance_timeout = is_numeric($book_advance_timeout) ? max(0, (int) $book_advance_timeout) : 0;
-
-        $threshold = new DateTime('now', $provider_timezone);
-
-        $threshold->modify('+' . $book_advance_timeout . ' minutes');
+        $threshold = earliest_bookable_datetime();
 
         foreach ($available_hours as $index => $value) {
             $available_hour = new DateTime($date . ' ' . $value, $provider_timezone);
 
-            if ($available_hour->getTimestamp() <= $threshold->getTimestamp()) {
+            if ($available_hour->getTimestamp() < $threshold->getTimestamp()) {
                 unset($available_hours[$index]);
             }
         }

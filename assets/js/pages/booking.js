@@ -106,9 +106,9 @@ App.Pages.Booking = (function () {
 
         let monthTimeout;
 
-        // Calculate minimum date based on minimum_advance_booking setting
-        const minimumAdvanceBooking = parseInt(vars('minimum_advance_booking')) || 0;
-        const minDate = moment().add(minimumAdvanceBooking, 'days').startOf('day').toDate();
+        // Minimum bookable date, computed server-side (business timezone, calendar days) so the
+        // customer's own browser clock/timezone can never disagree with it.
+        const minDate = moment(vars('earliest_bookable_date')).startOf('day').toDate();
 
         App.Utils.UI.initializeDatePicker($selectDate, {
             inline: true,
@@ -171,7 +171,7 @@ App.Pages.Booking = (function () {
         });
 
         // Set initial date considering minimum advance booking
-        const initialDate = moment().add(minimumAdvanceBooking, 'days').toDate();
+        const initialDate = moment(vars('earliest_bookable_date')).toDate();
         App.Utils.UI.setDateTimePickerValue($selectDate, initialDate);
 
         if (!$selectTimezone.prop('disabled')) {
@@ -609,7 +609,7 @@ App.Pages.Booking = (function () {
 
                 App.Utils.Message.show(
                     lang('cancel_appointment_title'),
-                    lang('write_appointment_removal_reason'),
+                    lang('cancel_appointment_reason_prompt'),
                     buttons,
                 );
 

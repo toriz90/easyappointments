@@ -124,6 +124,21 @@
                             </div>
                         </div>
 
+                        <h5 class="text-black-50 mb-3 fw-light"><?= lang('cancellation_cutoff_hours') ?></h5>
+
+                        <div class="mb-5">
+                            <label for="cancellation-cutoff-hours" class="form-label">
+                                <?= lang('minimum_hours') ?>
+                            </label>
+                            <input id="cancellation-cutoff-hours" data-field="cancellation_cutoff_hours" class="form-control"
+                                   type="number" min="0" max="168">
+                            <div class="form-text text-muted">
+                                <small>
+                                    <?= lang('cancellation_cutoff_hours_hint') ?>
+                                </small>
+                            </div>
+                        </div>
+
                         <div class="d-flex justify-content-start align-items-center mb-3">
                             <h5 class="mb-0 me-3 fw-light">
                                 <?= lang('appointment_status_options') ?>

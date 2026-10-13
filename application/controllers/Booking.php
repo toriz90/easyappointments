@@ -230,7 +230,7 @@ class Booking extends EA_Controller
         $display_any_provider = setting('display_any_provider');
         $display_login_button = setting('display_login_button');
         $display_delete_personal_information = setting('display_delete_personal_information');
-        $book_advance_timeout = setting('book_advance_timeout');
+        $cancellation_cutoff_hours = (int) setting('cancellation_cutoff_hours', 24);
         $legal_notice_url = setting('legal_notice_url');
         $imprint_url = setting('imprint_url');
         $theme = request('theme', setting('theme', 'default'));
@@ -280,28 +280,25 @@ class Booking extends EA_Controller
             $appointment = $results[0];
             $provider = $this->providers_model->find($appointment['id_users_provider']);
 
-            // Make sure the appointment can still be rescheduled.
+            // Make sure the appointment can still be managed: the reschedule page itself stays
+            // reachable until the appointment's original start time (picking a new date is a
+            // separate concern, bound by the normal minimum_advance_booking rule and enforced at
+            // submit time by check_datetime_availability()). Only the cancel button has its own,
+            // shorter cutoff - computed below as $can_cancel - since cancelling close to the
+            // appointment is what actually hurts the schedule, not rescheduling.
 
             $provider_timezone = new DateTimeZone($provider['timezone']);
 
             $appointment_start = new DateTime($appointment['start_datetime'], $provider_timezone);
 
-            $limit = new DateTime('now', $provider_timezone);
+            $now = new DateTime('now', $provider_timezone);
 
-            $limit->modify('+' . $book_advance_timeout . ' minutes');
-
-            if ($appointment_start < $limit) {
-                $hours = floor($book_advance_timeout / 60);
-
-                $minutes = $book_advance_timeout % 60;
-
+            if ($appointment_start <= $now) {
                 html_vars([
                     'show_message' => true,
                     'page_title' => lang('page_title') . ' ' . $company_name,
                     'message_title' => lang('appointment_locked'),
-                    'message_text' => strtr(lang('appointment_locked_message'), [
-                        '{$limit}' => sprintf('%02d:%02d', $hours, $minutes),
-                    ]),
+                    'message_text' => lang('appointment_already_started_message'),
                     'message_icon' => base_url('assets/img/error.png'),
                     'google_analytics_code' => $google_analytics_code,
                     'matomo_analytics_url' => $matomo_analytics_url,
@@ -315,6 +312,11 @@ class Booking extends EA_Controller
 
                 return;
             }
+
+            $hours_until_appointment = ($appointment_start->getTimestamp() - $now->getTimestamp()) / 3600;
+
+            $can_cancel = $hours_until_appointment >= $cancellation_cutoff_hours;
+
             $customer = $this->customers_model->find($appointment['id_users_customer']);
             $this->customers_model->only($customer, $this->allowed_customer_fields);
             $customer_token = md5(uniqid(mt_rand(), true));
@@ -368,6 +370,7 @@ class Booking extends EA_Controller
             $appointment = null;
             $provider = null;
             $customer = null;
+            $can_cancel = true;
         }
 
         script_vars([
@@ -381,6 +384,11 @@ class Booking extends EA_Controller
             'display_any_provider' => setting('display_any_provider'),
             'future_booking_limit' => setting('future_booking_limit'),
             'minimum_advance_booking' => setting('minimum_advance_booking', '0'),
+            // Computed once, server-side, in the business timezone - see earliest_bookable_datetime()
+            // in date_helper.php. The calendar widget uses this instead of redoing the day-count
+            // math with the customer's own browser clock/timezone, which could disagree with the
+            // server (wrong local time, DST, a different timezone entirely).
+            'earliest_bookable_date' => earliest_bookable_datetime()->format('Y-m-d'),
             'appointment_data' => $appointment,
             'provider_data' => $provider ? filter_sensitive_user_data($provider) : null,
             'customer_data' => $customer,
@@ -437,6 +445,8 @@ class Booking extends EA_Controller
             'provider_data' => $provider ? filter_sensitive_user_data($provider) : null,
             'customer_data' => $customer,
             'custom_fields' => $custom_fields,
+            'can_cancel' => $can_cancel,
+            'cancellation_cutoff_hours' => $cancellation_cutoff_hours,
         ]);
 
         $this->load->view('pages/booking');
@@ -537,6 +547,27 @@ class Booking extends EA_Controller
                     $original_appointment = $this->appointments_model->find((int) $appointment['id']);
                 } catch (Throwable $e) {
                     throw new RuntimeException(lang('appointment_does_not_exist_in_db'));
+                }
+
+                // Reschedule is allowed up to the original appointment's start time (the booking
+                // page already blocks this at page-load in index(), but that is bypassable if the
+                // form was left open since before the appointment started).  The new date/time
+                // itself only needs to satisfy the normal minimum_advance_booking rule, which
+                // check_datetime_availability() already enforces below via the available-hours
+                // check - no separate validation is needed for that part.
+                $original_provider = $this->providers_model->find($original_appointment['id_users_provider']);
+
+                $original_provider_timezone = new DateTimeZone($original_provider['timezone']);
+
+                $original_appointment_start = new DateTime(
+                    $original_appointment['start_datetime'],
+                    $original_provider_timezone,
+                );
+
+                $now_in_original_provider_timezone = new DateTime('now', $original_provider_timezone);
+
+                if ($original_appointment_start <= $now_in_original_provider_timezone) {
+                    throw new RuntimeException(lang('appointment_already_started_message'));
                 }
 
                 if ((int) ($appointment['id_services'] ?? 0) !== (int) $original_appointment['id_services']) {

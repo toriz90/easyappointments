@@ -422,9 +422,9 @@ App.Http.Booking = (function () {
         );
 
         if (setDate && !vars('manage_mode')) {
-            // Calculate minimum allowed date based on minimum_advance_booking
-            const minimumAdvanceBooking = parseInt(vars('minimum_advance_booking')) || 0;
-            const minAllowedDate = moment().add(minimumAdvanceBooking, 'days').startOf('day');
+            // Minimum allowed date, computed server-side (business timezone, calendar days) so
+            // the customer's own browser clock/timezone can never disagree with it.
+            const minAllowedDate = moment(vars('earliest_bookable_date')).startOf('day');
 
             for (let i = 1; i <= numberOfDays; i++) {
                 const currentDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), i);

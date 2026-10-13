@@ -486,17 +486,6 @@ $company_color = $settings['company_color'] ?? EMAIL_FALLBACK_COMPANY_COLOR;
                                                 </td>
                                             </tr>
 
-                                            <?php if (!empty($appointment['status'])): ?>
-                                                <tr>
-                                                    <td class="label" style="padding: 3px;font-weight: bold;">
-                                                        <?= lang('status') ?>
-                                                    </td>
-                                                    <td style="padding: 3px;">
-                                                        <?= e($appointment['status']) ?>
-                                                    </td>
-                                                </tr>
-                                            <?php endif; ?>
-
                                             <?php if (!empty($service['description'])): ?>
                                             <tr>
                                                 <td class="label" style="padding: 3px;font-weight: bold;">

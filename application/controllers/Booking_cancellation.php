@@ -98,6 +98,39 @@ class Booking_cancellation extends EA_Controller
 
             $provider = $this->providers_model->find($appointment['id_users_provider']);
 
+            // Enforce the cancellation cutoff server-side too: the cancel button is already
+            // disabled client-side within this window (see booking_cancellation_frame.php), but
+            // that is bypassable (a tab left open since before the cutoff, or a direct POST).
+            $provider_timezone = new DateTimeZone($provider['timezone']);
+
+            $appointment_start = new DateTime($appointment['start_datetime'], $provider_timezone);
+
+            $cancellation_cutoff_hours = (int) setting('cancellation_cutoff_hours', 24);
+
+            $cutoff = new DateTime('now', $provider_timezone);
+
+            $cutoff->modify('+' . $cancellation_cutoff_hours . ' hours');
+
+            if ($appointment_start < $cutoff) {
+                html_vars([
+                    'page_title' => lang('appointment_cancelled_title'),
+                    'company_color' => setting('company_color'),
+                    'message_title' => lang('appointment_locked'),
+                    'message_text' => strtr(lang('cancel_appointment_cutoff_hint'), [
+                        '{$hours}' => $cancellation_cutoff_hours,
+                    ]),
+                    'message_icon' => base_url('assets/img/error.png'),
+                    'google_analytics_code' => setting('google_analytics_code'),
+                    'matomo_analytics_url' => setting('matomo_analytics_url'),
+                    'matomo_analytics_site_id' => setting('matomo_analytics_site_id'),
+                    'display_login_button' => setting('display_login_button'),
+                ]);
+
+                $this->load->view('pages/booking_message');
+
+                return;
+            }
+
             $customer = $this->customers_model->find($appointment['id_users_customer']);
 
             $service = $this->services_model->find($appointment['id_services']);

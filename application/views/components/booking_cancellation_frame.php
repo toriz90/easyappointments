@@ -5,13 +5,22 @@
  * @var bool $manage_mode
  * @var array $appointment_data
  * @var bool $display_delete_personal_information
+ * @var bool $can_cancel
+ * @var int $cancellation_cutoff_hours
  */
+
+$can_cancel = $can_cancel ?? true;
+$cancellation_cutoff_hours = $cancellation_cutoff_hours ?? 24;
 ?>
 
 <?php if ($manage_mode): ?>
     <div id="cancel-appointment-frame" class="row booking-header-bar py-2 px-3 m-0 align-items-center bg-warning-subtle">
         <div class="col-lg-9">
-            <small><?= lang('cancel_appointment_hint') ?></small>
+            <small>
+                <?= $can_cancel
+                    ? lang('cancel_appointment_hint')
+                    : strtr(lang('cancel_appointment_cutoff_hint'), ['{$hours}' => $cancellation_cutoff_hours]) ?>
+            </small>
         </div>
         <div class="col-lg-3 text-end">
             <form id="cancel-appointment-form" method="post"
@@ -19,9 +28,9 @@
 
                 <input id="hidden-cancellation-reason" name="cancellation_reason" type="hidden">
 
-                <button id="cancel-appointment" class="btn btn-warning btn-sm">
+                <button id="cancel-appointment" class="btn btn-warning btn-sm" <?= $can_cancel ? '' : 'disabled' ?>>
                     <i class="fas fa-trash me-2"></i>
-                    <?= lang('delete') ?>
+                    <?= lang('cancel_appointment_button') ?>
                 </button>
             </form>
         </div>
